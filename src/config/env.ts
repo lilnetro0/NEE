@@ -4,16 +4,16 @@
  * Components and hooks must import from this module — never read
  * `import.meta.env` directly (except inside this file).
  *
- * All VITE_* values are public. Supplier / payment / DB secrets must never
- * appear here.
+ * All VITE_* values are public. Service-role keys, payment secrets, and
+ * supplier credentials must never appear here.
  */
 
 export type AppEnvironment = "development" | "preview" | "production";
 
 export type PublicEnv = {
   appEnv: AppEnvironment;
-  apiBaseUrl: string | null;
-  useMocks: boolean;
+  supabaseUrl: string;
+  supabasePublishableKey: string;
   enableDevTools: boolean;
   sentryDsn: string | null;
   appVersion: string;
@@ -54,14 +54,13 @@ function parseAppEnv(raw: string | undefined, isViteProduction: boolean): AppEnv
   );
 }
 
-function normalizeBaseUrl(raw: string | undefined): string | null {
-  if (!raw) return null;
+function normalizeBaseUrl(raw: string): string {
   return raw.replace(/\/+$/, "");
 }
 
 /**
  * Validates and returns the public env. Safe to call at module load.
- * Throws EnvConfigError when production/HTTP configuration is invalid.
+ * Throws EnvConfigError when Supabase configuration is invalid.
  */
 export function loadPublicEnv(
   source: {
@@ -74,47 +73,40 @@ export function loadPublicEnv(
   const appEnv = parseAppEnv(get("VITE_APP_ENV"), isViteProduction);
   const isProduction = appEnv === "production" || isViteProduction;
 
-  // Production defaults to HTTP (mocks off). Dev/preview default to mocks.
-  const useMocks = parseBool(get("VITE_USE_MOCKS"), !isProduction);
-  const apiBaseUrl = normalizeBaseUrl(get("VITE_API_BASE_URL"));
+  const supabaseUrlRaw = get("VITE_SUPABASE_URL");
+  const supabasePublishableKey = get("VITE_SUPABASE_PUBLISHABLE_KEY");
   const enableDevTools = parseBool(get("VITE_ENABLE_DEV_TOOLS"), !isProduction) && !isProduction;
   const sentryDsn = get("VITE_SENTRY_DSN") ?? null;
   const appVersion = get("VITE_APP_VERSION") ?? "0.0.0";
   const buildSha = get("VITE_BUILD_SHA") ?? "unknown";
 
-  if (isProduction && useMocks) {
+  if (!supabaseUrlRaw || !supabasePublishableKey) {
     throw new EnvConfigError(
-      "Production builds cannot use mock repositories. Set VITE_USE_MOCKS=false and provide VITE_API_BASE_URL.",
+      "Supabase requires VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.",
     );
   }
 
-  if (!useMocks && !apiBaseUrl) {
-    throw new EnvConfigError(
-      "HTTP repository mode requires VITE_API_BASE_URL (NETRO backend only — never a distributor URL).",
-    );
-  }
-
-  if (apiBaseUrl) {
-    try {
-      const url = new URL(apiBaseUrl);
-      if (url.protocol !== "http:" && url.protocol !== "https:") {
-        throw new Error("bad protocol");
-      }
-    } catch {
-      throw new EnvConfigError(`VITE_API_BASE_URL is not a valid URL: "${apiBaseUrl}"`);
+  let supabaseUrl: string;
+  try {
+    const url = new URL(supabaseUrlRaw);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      throw new Error("bad protocol");
     }
+    supabaseUrl = normalizeBaseUrl(supabaseUrlRaw);
+  } catch {
+    throw new EnvConfigError(`VITE_SUPABASE_URL is not a valid URL: "${supabaseUrlRaw}"`);
   }
 
-  if (isProduction && apiBaseUrl && /localhost|127\.0\.0\.1/i.test(apiBaseUrl)) {
+  if (isProduction && /localhost|127\.0\.0\.1/i.test(supabaseUrl)) {
     throw new EnvConfigError(
-      "Production VITE_API_BASE_URL must not point at localhost. Use the NETRO backend URL.",
+      "Production VITE_SUPABASE_URL must not point at localhost. Use your Supabase project URL.",
     );
   }
 
   return {
     appEnv,
-    apiBaseUrl,
-    useMocks,
+    supabaseUrl,
+    supabasePublishableKey,
     enableDevTools,
     sentryDsn,
     appVersion,
@@ -138,8 +130,4 @@ export function __resetPublicEnvForTests(next?: PublicEnv | null): void {
 
 export function isDevToolsEnabled(): boolean {
   return getPublicEnv().enableDevTools;
-}
-
-export function isMockRepositoriesEnabled(): boolean {
-  return getPublicEnv().useMocks;
 }

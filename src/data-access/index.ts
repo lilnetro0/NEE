@@ -12,14 +12,11 @@ export type {
 export type { AuthRepository } from "./repositories/auth-repository";
 export type { DeviceSession as AuthSession } from "@/domain/auth";
 export { RepositoriesProvider, useRepositories } from "./RepositoriesProvider";
-export { createMockRepositories } from "./mock/create-mock-repositories";
 export {
-  createHttpRepositories,
+  createSupabaseRepositories,
   createRepositoriesFromEnv,
   type RepositoryMode,
-} from "./http/create-http-repositories";
-export { NetroApiClient, getApiClient } from "./http/api-client";
-export { MOCK_OTP_VALID, MOCK_OTP_EXPIRED } from "./mock/mock-auth-repository";
+} from "./supabase/create-supabase-repositories";
 export { useResultQuery } from "./hooks/useResultQuery";
 export {
   useProducts,

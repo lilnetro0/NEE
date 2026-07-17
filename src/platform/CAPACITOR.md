@@ -34,8 +34,8 @@ Production Capacitor builds need public env at **build** time (Vite inlines `VIT
 
 ```powershell
 $env:VITE_APP_ENV="production"
-$env:VITE_USE_MOCKS="false"
-$env:VITE_API_BASE_URL="https://api.your-netro-domain"
+$env:VITE_SUPABASE_URL="https://YOUR_PROJECT.supabase.co"
+$env:VITE_SUPABASE_PUBLISHABLE_KEY="YOUR_ANON_KEY"
 npm run cap:sync:android
 ```
 

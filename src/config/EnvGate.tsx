@@ -8,7 +8,7 @@ type Props = {
 
 /**
  * Validates public env once at startup and initializes observability.
- * Renders a clear failure screen when production config is invalid.
+ * Renders a clear failure screen when Supabase configuration is invalid.
  */
 export function EnvGate({ children }: Props) {
   const [state, setState] = useState<
@@ -46,8 +46,8 @@ export function EnvGate({ children }: Props) {
           <h1 className="font-display text-xl font-bold">Configuration error</h1>
           <p className="mt-3 text-sm text-muted-foreground">{state.message}</p>
           <p className="mt-4 text-xs text-muted-foreground">
-            Check `.env` against `.env.example`. Production must use HTTP repositories
-            (`VITE_USE_MOCKS=false`) and a NETRO `VITE_API_BASE_URL`.
+            Check `.env` against `.env.example`. Set `VITE_SUPABASE_URL` and
+            `VITE_SUPABASE_PUBLISHABLE_KEY` from your Supabase project API settings.
           </p>
         </div>
       </div>

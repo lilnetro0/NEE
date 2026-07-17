@@ -6,73 +6,59 @@ describe("loadPublicEnv", () => {
     __resetPublicEnvForTests(null);
   });
 
-  it("defaults to mocks in development", () => {
-    const env = loadPublicEnv({
-      viteProd: false,
-      get: (key) => {
-        if (key === "VITE_APP_ENV") return "development";
-        return undefined;
-      },
-    });
-    expect(env.useMocks).toBe(true);
-    expect(env.apiBaseUrl).toBeNull();
-    expect(env.enableDevTools).toBe(true);
-  });
-
-  it("requires API URL when mocks are disabled", () => {
+  it("requires Supabase URL and publishable key", () => {
     expect(() =>
       loadPublicEnv({
         viteProd: false,
         get: (key) => {
-          if (key === "VITE_USE_MOCKS") return "false";
+          if (key === "VITE_APP_ENV") return "development";
           return undefined;
         },
       }),
     ).toThrow(EnvConfigError);
   });
 
-  it("rejects mocks in production", () => {
-    expect(() =>
-      loadPublicEnv({
-        viteProd: true,
-        get: (key) => {
-          if (key === "VITE_APP_ENV") return "production";
-          if (key === "VITE_USE_MOCKS") return "true";
-          if (key === "VITE_API_BASE_URL") return "https://api.example.com";
-          return undefined;
-        },
-      }),
-    ).toThrow(/cannot use mock/i);
+  it("accepts development Supabase configuration", () => {
+    const env = loadPublicEnv({
+      viteProd: false,
+      get: (key) => {
+        if (key === "VITE_APP_ENV") return "development";
+        if (key === "VITE_SUPABASE_URL") return "https://example.supabase.co/";
+        if (key === "VITE_SUPABASE_PUBLISHABLE_KEY") return "anon-key";
+        return undefined;
+      },
+    });
+    expect(env.supabaseUrl).toBe("https://example.supabase.co");
+    expect(env.supabasePublishableKey).toBe("anon-key");
+    expect(env.enableDevTools).toBe(true);
   });
 
-  it("rejects localhost API URL in production", () => {
+  it("rejects localhost Supabase URL in production", () => {
     expect(() =>
       loadPublicEnv({
         viteProd: true,
         get: (key) => {
           if (key === "VITE_APP_ENV") return "production";
-          if (key === "VITE_USE_MOCKS") return "false";
-          if (key === "VITE_API_BASE_URL") return "http://localhost:3000";
+          if (key === "VITE_SUPABASE_URL") return "http://localhost:54321";
+          if (key === "VITE_SUPABASE_PUBLISHABLE_KEY") return "anon-key";
           return undefined;
         },
       }),
     ).toThrow(/localhost/i);
   });
 
-  it("accepts production HTTP configuration", () => {
+  it("accepts production Supabase configuration", () => {
     const env = loadPublicEnv({
       viteProd: true,
       get: (key) => {
         if (key === "VITE_APP_ENV") return "production";
-        if (key === "VITE_USE_MOCKS") return "false";
-        if (key === "VITE_API_BASE_URL") return "https://api.netro.app/";
+        if (key === "VITE_SUPABASE_URL") return "https://xyz.supabase.co";
+        if (key === "VITE_SUPABASE_PUBLISHABLE_KEY") return "anon-key";
         if (key === "VITE_APP_VERSION") return "1.2.3";
         if (key === "VITE_BUILD_SHA") return "abc123";
         return undefined;
       },
     });
-    expect(env.useMocks).toBe(false);
-    expect(env.apiBaseUrl).toBe("https://api.netro.app");
     expect(env.enableDevTools).toBe(false);
     expect(env.appVersion).toBe("1.2.3");
     expect(env.buildSha).toBe("abc123");

@@ -40,8 +40,8 @@ jobs:
       - name: Production build
         env:
           VITE_APP_ENV: production
-          VITE_USE_MOCKS: "false"
-          VITE_API_BASE_URL: https://api.example.netro.app
+          VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: ci-anon-key
           VITE_ENABLE_DEV_TOOLS: "false"
           VITE_APP_VERSION: ${{ github.sha }}
           VITE_BUILD_SHA: ${{ github.sha }}

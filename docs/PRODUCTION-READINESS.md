@@ -22,12 +22,12 @@ npm run prod:check   # typecheck → lint → test → build
 
 - Copy `.env.example` → `.env` for local work (`.env` is gitignored).
 - Access env only via `src/config/env.ts` (`getPublicEnv` / `loadPublicEnv`).
-- Production refuses `VITE_USE_MOCKS=true` and refuses localhost API URLs.
+- Production requires `VITE_SUPABASE_URL` + `VITE_SUPABASE_PUBLISHABLE_KEY` and refuses localhost Supabase URLs.
 - See [ENVIRONMENT-CONFIGURATION.md](./ENVIRONMENT-CONFIGURATION.md).
 
 ## Repository mode
 
-- Dev/preview: mocks allowed when `VITE_USE_MOCKS=true`.
+- Dev/preview: same Supabase repositories; payment/fulfillment stubs only via Edge Function secrets.
 - Production: HTTP repositories only (`createRepositoriesFromEnv`).
 - No silent mock fallback in production.
 - See [BACKEND-INTEGRATION-CHECKLIST.md](./BACKEND-INTEGRATION-CHECKLIST.md).

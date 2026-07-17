@@ -20,8 +20,8 @@ Capacitor `appId`, Xcode `PRODUCT_BUNDLE_IDENTIFIER`, and Codemagic `ios_signing
    - Environment variable `APP_STORE_CONNECT_PRIVATE_KEY` = full contents of `AuthKey_PC52DBNDLS.p8`
 3. **Release web env**
    - `VITE_APP_ENV=production`
-   - `VITE_USE_MOCKS=false`
-   - `VITE_API_BASE_URL=https://<real-netro-api>/api` (required; Release fails without a non-placeholder URL)
+   - `VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY=<anon key>` (required; Release fails without real Supabase credentials)
 
 ## Workflow order (Release)
 

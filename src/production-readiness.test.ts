@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deriveOrderDisplayStatus, withDerivedDisplayStatus } from "@/domain/order";
-import { isQuoteExpired } from "@/data-access/mock/mock-quote-service";
+import { deriveOrderDisplayStatus, withDerivedDisplayStatus, isQuoteExpired } from "@/domain/order";
 import type { CheckoutQuote } from "@/domain/order";
 import { resolveCapabilities, DEFAULT_CAPABILITY_CONFIG } from "@/platform/capabilities";
 import { assertNotSensitiveLocalStorageKey, maskDigitalCode, LTR_ATTR } from "@/lib/security";

@@ -321,6 +321,10 @@ export type Order = {
   events: OrderEvent[];
 };
 
+export function isQuoteExpired(quote: Pick<CheckoutQuote, "expiresAt">, now = Date.now()): boolean {
+  return Date.parse(quote.expiresAt) <= now;
+}
+
 export function withDerivedDisplayStatus(
   order: Omit<Order, "displayStatus"> & { displayStatus?: OrderDisplayStatus },
 ): Order {

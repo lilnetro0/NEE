@@ -2,21 +2,21 @@
 
 ## Prerequisites
 
-1. NETRO backend reachable over HTTPS.
+1. Supabase project ready (Auth, migrations, Edge Functions). See [SUPABASE.md](./SUPABASE.md).
 2. Production env vars set at **build time** (Vite inlines `VITE_*`):
 
 ```env
 VITE_APP_ENV=production
-VITE_USE_MOCKS=false
-VITE_API_BASE_URL=https://api.example.com
+VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_ANON_KEY
 VITE_ENABLE_DEV_TOOLS=false
 VITE_APP_VERSION=<semver>
 VITE_BUILD_SHA=<sha>
 VITE_SENTRY_DSN=   # optional
 ```
 
-3. Cookie auth: backend must set HttpOnly Secure cookies with correct `SameSite` / domain for the PWA origin.
-4. CORS: allow the web origin with credentials if cookie auth is used.
+3. Never put the service-role key or payment/supplier secrets in `VITE_*`.
+4. Edge Function secrets: stub flags off in production; Moyasar/supplier keys when wired.
 
 ## Build
 

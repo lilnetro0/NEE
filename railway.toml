@@ -8,8 +8,8 @@
 #
 # Also set these in the Railway service (build-time):
 #   VITE_APP_ENV=production
-#   VITE_USE_MOCKS=false
-#   VITE_API_BASE_URL=https://your-api.example.com/api
+#   VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+#   VITE_SUPABASE_PUBLISHABLE_KEY=<anon key>
 #   VITE_ENABLE_DEV_TOOLS=false
 #
 # Keep bun.lock in sync with package.json (`bun install`).
