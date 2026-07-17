@@ -3,6 +3,12 @@
 #
 # Capacitor 8 iOS uses App.xcodeproj (Swift Package Manager), not CocoaPods
 # App.xcworkspace.
+#
+# ios-workflow builds for the iOS Simulator (no Apple provisioning profile).
+# When you are ready for TestFlight/App Store:
+#   1. Codemagic → Teams → Code signing identities (upload cert + profiles)
+#   2. Uncomment ios_signing + switch the build step to xcode-project build-ipa
+#      (see ios-release-workflow below)
 
 workflows:
   ios-workflow:
@@ -36,28 +42,60 @@ workflows:
             npx cap add ios
           fi
           npx cap sync ios
-          echo "iOS project contents:"
           ls -la ios/App
-      - name: Set up code signing settings on Xcode project
-        script: |
-          xcode-project use-profiles || echo "Configure ios_signing in Codemagic when ready for store builds"
-      - name: Build ipa for distribution
+      - name: Build iOS (Simulator, no signing)
         script: |
           cd "$CM_BUILD_DIR/ios/App"
-          # Capacitor 8 + SPM → .xcodeproj (not CocoaPods .xcworkspace)
-          if [ -d "App.xcworkspace" ]; then
-            xcode-project build-ipa \
-              --workspace "App.xcworkspace" \
-              --scheme "$XCODE_SCHEME"
-          else
-            xcode-project build-ipa \
-              --project "$XCODE_PROJECT" \
-              --scheme "$XCODE_SCHEME"
-          fi
+          # No provisioning profile required — verifies the Xcode project compiles.
+          xcodebuild \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
     artifacts:
-      - build/ios/ipa/*.ipa
-      - ios/App/build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
+
+  # Signed App Store / TestFlight IPA — enable after uploading certs + profiles
+  # in Codemagic code signing settings.
+  # ios-release-workflow:
+  #   name: NETRO iOS Release
+  #   max_build_duration: 120
+  #   instance_type: mac_mini_m2
+  #   integrations:
+  #     app_store_connect: YOUR_ASC_KEY_NAME
+  #   environment:
+  #     ios_signing:
+  #       distribution_type: app_store
+  #       bundle_identifier: com.lilnetro0.nexus
+  #     vars:
+  #       XCODE_PROJECT: "App.xcodeproj"
+  #       XCODE_SCHEME: "App"
+  #     node: 22
+  #     xcode: latest
+  #   scripts:
+  #     - name: Install npm dependencies
+  #       script: npm ci || npm install
+  #     - name: Build web assets for Capacitor
+  #       script: |
+  #         export VITE_APP_ENV=production
+  #         export VITE_USE_MOCKS=false
+  #         export VITE_API_BASE_URL="$VITE_API_BASE_URL"
+  #         npm run build && npm run prepare:capacitor
+  #     - name: Sync iOS
+  #       script: npx cap sync ios
+  #     - name: Set up code signing
+  #       script: xcode-project use-profiles
+  #     - name: Build IPA
+  #       script: |
+  #         cd "$CM_BUILD_DIR/ios/App"
+  #         xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME"
+  #   artifacts:
+  #     - ios/App/build/ios/ipa/*.ipa
 
   android-workflow:
     name: NETRO Android
