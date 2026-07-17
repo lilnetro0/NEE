@@ -11,5 +11,8 @@ export default defineConfig({
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
+    // NOTE: SPA prerender (`spa.enabled`) is intentionally off. With Nitro's `.output`
+    // layout it looks for `dist/server/server.js` and fails. Capacitor gets its
+    // index.html from `npm run prepare:capacitor` instead (see scripts/).
   },
 });

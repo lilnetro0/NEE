@@ -14,9 +14,17 @@
     "test:watch": "vitest",
     "prod:check": "npm run typecheck && npm run lint && npm run test && npm run build",
     "ci": "npm run prod:check",
+    "prepare:capacitor": "node ./scripts/prepare-capacitor-web.mjs",
+    "cap:sync": "npm run build && npm run prepare:capacitor && npx cap sync",
+    "cap:sync:android": "npm run build && npm run prepare:capacitor && npx cap sync android",
+    "cap:sync:ios": "npm run build && npm run prepare:capacitor && npx cap sync ios",
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/cli": "^8.4.2",
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/ios": "^8.4.2",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
