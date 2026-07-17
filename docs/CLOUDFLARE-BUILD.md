@@ -13,11 +13,16 @@ npx npm@10.9.2 ci   # must succeed locally before push
 
 ## Rolldown / native bindings
 
-Vite 8 uses Rolldown, which needs platform-specific optional packages (e.g. `@rolldown/binding-linux-x64-gnu`). A lockfile produced on Windows often only resolves the Windows binding, so Linux CI fails with:
+Vite 8 uses Rolldown (`1.2.0` via `overrides`), which needs platform-specific optional packages. A lockfile produced on one OS often skips other platforms’ bindings.
 
-`Cannot find module '@rolldown/binding-linux-x64-gnu'`
+This repo pins top-level `optionalDependencies` for:
 
-This repo pins the Linux bindings (and related oxide/lightningcss/oxc Linux packages) as top-level `optionalDependencies`, and forces a single `rolldown` version via `overrides`, so `npm ci` on Cloudflare installs the Linux native binding.
+- Linux: `@rolldown/binding-linux-x64-gnu` / `musl` (Cloudflare)
+- macOS: `@rolldown/binding-darwin-arm64` / `darwin-x64` (Codemagic `mac_mini_m2`)
+
+Note: Rolldown’s loader also tries `@rolldown/binding-darwin-universal`, but that package is **not published** for `1.2.0`. The real macOS packages are arch-specific (`darwin-arm64` / `darwin-x64`).
+
+Codemagic must use `npm ci --include=optional` (see `codemagic.yaml`).
 
 ## Build command
 

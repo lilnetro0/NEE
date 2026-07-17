@@ -10,6 +10,9 @@
 #   2. Run workflow "NETRO iOS Release"
 #
 # Bundle ID: com.lilnetro0.nexus
+#
+# Vite 8 / Rolldown: install with `npm ci --include=optional` so Darwin
+# native bindings from optionalDependencies are present on macOS runners.
 
 workflows:
   ios-workflow:
@@ -26,9 +29,29 @@ workflows:
     scripts:
       - name: Install npm dependencies
         script: |
-          npm ci || npm install
-      - name: Build web assets for Capacitor
+          set -euo pipefail
+          npm ci --include=optional
+      - name: Verify Rolldown Darwin binding
         script: |
+          set -euo pipefail
+          node --version
+          npm --version
+          npm list vite rolldown @rolldown/binding-darwin-arm64 @rolldown/binding-darwin-x64 @rolldown/binding-darwin-universal || true
+          ls -la node_modules/@rolldown || true
+          # @rolldown/binding-darwin-universal is not published for rolldown 1.2.0;
+          # Codemagic mac_mini_m2 needs darwin-arm64 (x64 kept for Intel hosts).
+          if [ ! -d "node_modules/@rolldown/binding-darwin-arm64" ] && [ ! -d "node_modules/@rolldown/binding-darwin-x64" ] && [ ! -d "node_modules/@rolldown/binding-darwin-universal" ]; then
+            echo "ERROR: Missing Darwin Rolldown native binding after npm ci --include=optional"
+            exit 1
+          fi
+          if [ "$(uname -m)" = "arm64" ] && [ ! -d "node_modules/@rolldown/binding-darwin-arm64" ]; then
+            echo "ERROR: Missing @rolldown/binding-darwin-arm64 on Apple Silicon runner"
+            exit 1
+          fi
+          echo "Darwin Rolldown binding OK"
+      - name: Build web assets
+        script: |
+          set -euo pipefail
           export VITE_APP_ENV="${VITE_APP_ENV:-preview}"
           export VITE_USE_MOCKS="${VITE_USE_MOCKS:-true}"
           export VITE_API_BASE_URL="${VITE_API_BASE_URL:-http://localhost:3000}"
@@ -36,9 +59,14 @@ workflows:
           export VITE_APP_VERSION="${VITE_APP_VERSION:-1.0.0}"
           export VITE_BUILD_SHA="${VITE_BUILD_SHA:-${CM_COMMIT}}"
           npm run build
+          test -d .output/public/assets
+      - name: Prepare Capacitor web dir
+        script: |
+          set -euo pipefail
           npm run prepare:capacitor
       - name: Ensure iOS platform and sync
         script: |
+          set -euo pipefail
           if [ ! -d "ios/App" ]; then
             npx cap add ios
           fi
@@ -46,6 +74,7 @@ workflows:
           ls -la ios/App
       - name: Build iOS (Simulator, no signing)
         script: |
+          set -euo pipefail
           cd "$CM_BUILD_DIR/ios/App"
           xcodebuild \
             -project "$XCODE_PROJECT" \
@@ -77,9 +106,27 @@ workflows:
     scripts:
       - name: Install npm dependencies
         script: |
-          npm ci || npm install
-      - name: Build web assets for Capacitor
+          set -euo pipefail
+          npm ci --include=optional
+      - name: Verify Rolldown Darwin binding
         script: |
+          set -euo pipefail
+          node --version
+          npm --version
+          npm list vite rolldown @rolldown/binding-darwin-arm64 @rolldown/binding-darwin-x64 @rolldown/binding-darwin-universal || true
+          ls -la node_modules/@rolldown || true
+          if [ ! -d "node_modules/@rolldown/binding-darwin-arm64" ] && [ ! -d "node_modules/@rolldown/binding-darwin-x64" ] && [ ! -d "node_modules/@rolldown/binding-darwin-universal" ]; then
+            echo "ERROR: Missing Darwin Rolldown native binding after npm ci --include=optional"
+            exit 1
+          fi
+          if [ "$(uname -m)" = "arm64" ] && [ ! -d "node_modules/@rolldown/binding-darwin-arm64" ]; then
+            echo "ERROR: Missing @rolldown/binding-darwin-arm64 on Apple Silicon runner"
+            exit 1
+          fi
+          echo "Darwin Rolldown binding OK"
+      - name: Build web assets
+        script: |
+          set -euo pipefail
           export VITE_APP_ENV="${VITE_APP_ENV:-production}"
           export VITE_USE_MOCKS="${VITE_USE_MOCKS:-false}"
           export VITE_API_BASE_URL="${VITE_API_BASE_URL:-https://api.example.netro.app}"
@@ -87,15 +134,21 @@ workflows:
           export VITE_APP_VERSION="${VITE_APP_VERSION:-1.0.0}"
           export VITE_BUILD_SHA="${VITE_BUILD_SHA:-${CM_COMMIT}}"
           npm run build
+          test -d .output/public/assets
+      - name: Prepare Capacitor web dir
+        script: |
+          set -euo pipefail
           npm run prepare:capacitor
       - name: Sync iOS
         script: |
+          set -euo pipefail
           npx cap sync ios
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles
       - name: Build IPA
         script: |
+          set -euo pipefail
           cd "$CM_BUILD_DIR/ios/App"
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \
@@ -120,9 +173,27 @@ workflows:
           echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
       - name: Install npm dependencies
         script: |
-          npm ci || npm install
-      - name: Build web assets and sync Android
+          set -euo pipefail
+          npm ci --include=optional
+      - name: Verify Rolldown Darwin binding
         script: |
+          set -euo pipefail
+          node --version
+          npm --version
+          npm list vite rolldown @rolldown/binding-darwin-arm64 @rolldown/binding-darwin-x64 @rolldown/binding-darwin-universal || true
+          ls -la node_modules/@rolldown || true
+          if [ ! -d "node_modules/@rolldown/binding-darwin-arm64" ] && [ ! -d "node_modules/@rolldown/binding-darwin-x64" ] && [ ! -d "node_modules/@rolldown/binding-darwin-universal" ]; then
+            echo "ERROR: Missing Darwin Rolldown native binding after npm ci --include=optional"
+            exit 1
+          fi
+          if [ "$(uname -m)" = "arm64" ] && [ ! -d "node_modules/@rolldown/binding-darwin-arm64" ]; then
+            echo "ERROR: Missing @rolldown/binding-darwin-arm64 on Apple Silicon runner"
+            exit 1
+          fi
+          echo "Darwin Rolldown binding OK"
+      - name: Build web assets
+        script: |
+          set -euo pipefail
           export VITE_APP_ENV="${VITE_APP_ENV:-preview}"
           export VITE_USE_MOCKS="${VITE_USE_MOCKS:-true}"
           export VITE_API_BASE_URL="${VITE_API_BASE_URL:-http://localhost:3000}"
@@ -130,10 +201,15 @@ workflows:
           export VITE_APP_VERSION="${VITE_APP_VERSION:-1.0.0}"
           export VITE_BUILD_SHA="${VITE_BUILD_SHA:-${CM_COMMIT}}"
           npm run build
+          test -d .output/public/assets
+      - name: Prepare Capacitor web dir and sync Android
+        script: |
+          set -euo pipefail
           npm run prepare:capacitor
           npx cap sync android
       - name: Build Android debug APK
         script: |
+          set -euo pipefail
           cd android
           ./gradlew assembleDebug
     artifacts:
