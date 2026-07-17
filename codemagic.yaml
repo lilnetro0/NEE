@@ -113,6 +113,7 @@ workflows:
         XCODE_PROJECT: "App.xcodeproj"
         XCODE_SCHEME: "App"
         CM_CLONE_DEPTH: 1
+        APP_STORE_APPLE_ID: "6792112710"
       node: 22
       xcode: latest
     scripts:
