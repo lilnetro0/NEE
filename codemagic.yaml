@@ -22,7 +22,10 @@ workflows:
       node: 22
     scripts:
       - name: Install npm dependencies
-        script: npm ci
+        script: |
+          # Prefer npm ci when lockfile is in sync; fall back if Codemagic npm
+          # resolves optional nested deps differently than the lock generator.
+          npm ci || npm install
       - name: Build web assets for Capacitor
         script: |
           export VITE_APP_ENV="${VITE_APP_ENV:-preview}"
@@ -72,7 +75,10 @@ workflows:
         script: |
           echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
       - name: Install npm dependencies
-        script: npm ci
+        script: |
+          # Prefer npm ci when lockfile is in sync; fall back if Codemagic npm
+          # resolves optional nested deps differently than the lock generator.
+          npm ci || npm install
       - name: Build web assets and sync Android
         script: |
           export VITE_APP_ENV="${VITE_APP_ENV:-preview}"
