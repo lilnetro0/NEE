@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">NETRO</string>
     <string name="title_activity_main">NETRO</string>
-    <string name="package_name">com.lilnetro0.netro</string>
-    <string name="custom_url_scheme">com.lilnetro0.netro</string>
+    <string name="package_name">com.lilnetro0.netr</string>
+    <string name="custom_url_scheme">com.lilnetro0.netr</string>
 </resources>

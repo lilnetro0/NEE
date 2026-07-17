@@ -1,7 +1,7 @@
 # Codemagic CI/CD for NETRO (Capacitor 8 + SPM)
 # https://docs.codemagic.io/yaml-quick-start/building-an-ionic-app/
 #
-# Bundle ID:  com.lilnetro0.netro
+# Bundle ID:  com.lilnetro0.netr
 # Team ID:    T8KY6PR359
 # ASC app:    NNN
 #
@@ -10,7 +10,7 @@
 # Code signing (Release IPA) — manual profiles in Codemagic UI:
 #   Teams → Code signing identities
 #   - Upload distribution .p12 (password when prompted)
-#   - Upload App Store .mobileprovision for com.lilnetro0.netro
+#   - Upload App Store .mobileprovision for com.lilnetro0.netr
 #
 # TestFlight upload — App Store Connect API key in Codemagic UI:
 #   Add encrypted / secret env var APP_STORE_CONNECT_PRIVATE_KEY = contents of AuthKey_PC52DBNDLS.p8
@@ -106,7 +106,7 @@ workflows:
         - NETRO
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.lilnetro0.netro
+        bundle_identifier: com.lilnetro0.netr
       vars:
         XCODE_PROJECT: "App.xcodeproj"
         XCODE_SCHEME: "App"
@@ -162,7 +162,7 @@ workflows:
           set -euo pipefail
           CAP_ID="$(node -e "const fs=require('fs'); const t=fs.readFileSync('capacitor.config.ts','utf8'); const m=t.match(/appId:\\s*[\\\"']([^\\\"']+)[\\\"']/); if(!m){console.error('Could not parse appId'); process.exit(1);} console.log(m[1]);")"
           PBX_ID="$(grep -E 'PRODUCT_BUNDLE_IDENTIFIER = ' ios/App/App.xcodeproj/project.pbxproj | head -1 | sed 's/.*= //;s/;//' | tr -d '[:space:]')"
-          CM_ID="com.lilnetro0.netro"
+          CM_ID="com.lilnetro0.netr"
           echo "capacitor.config.ts appId:           ${CAP_ID}"
           echo "Xcode PRODUCT_BUNDLE_IDENTIFIER:    ${PBX_ID}"
           echo "Codemagic ios_signing.bundle_id:    ${CM_ID}"
@@ -222,7 +222,7 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       vars:
-        PACKAGE_NAME: "com.lilnetro0.netro"
+        PACKAGE_NAME: "com.lilnetro0.netr"
         CM_CLONE_DEPTH: 1
       node: 22
     scripts:
