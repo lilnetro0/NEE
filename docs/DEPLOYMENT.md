@@ -27,7 +27,24 @@ bun run prod:check
 bun run build
 ```
 
-Artifacts: Vite / TanStack Start / Nitro output under `.output` / `dist` (host-specific).
+Artifacts: Vite / TanStack Start / Nitro output under `.output` (not classic Vite `dist`).
+
+## Railway (Railpack)
+
+Railpack picks Bun when `bun.lock` is present and runs `bun install --frozen-lockfile`.
+After changing `package.json` / `package-lock.json`, regenerate and commit `bun.lock`:
+
+```bash
+bun install
+```
+
+Config: [`railway.toml`](../railway.toml). In the Railway service, set:
+
+```env
+RAILPACK_SPA_OUTPUT_DIR=.output/public
+```
+
+plus production `VITE_*` vars (build-time). Full SSR for Cloudflare Workers remains the primary web path; Railway serves the Capacitor-prepared static shell from `.output/public`.
 
 ## Host headers
 
