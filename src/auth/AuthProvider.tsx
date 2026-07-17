@@ -59,9 +59,9 @@ type AuthContextValue = {
   loginWithPassword: (identifier: string, password: string) => Promise<boolean>;
   signup: (input: {
     displayName: string;
-    phone: string;
-    email?: string;
-    password?: string;
+    email: string;
+    password: string;
+    phone?: string;
   }) => Promise<boolean>;
   logout: () => Promise<void>;
 };
@@ -228,7 +228,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signup = useCallback(
-    async (input: { displayName: string; phone: string; email?: string; password?: string }) => {
+    async (input: {
+      displayName: string;
+      email: string;
+      password: string;
+      phone?: string;
+    }) => {
       setPhase("loading");
       setLastError(null);
       const result = await auth.signup(input);
@@ -237,11 +242,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setPhase(mapErrorToPhase(result.error));
         return false;
       }
-      setChallenge(result.data);
-      setPhase("awaiting_otp");
+      await applySignIn(result.data.user, result.data.session);
       return true;
     },
-    [auth],
+    [auth, applySignIn],
   );
 
   const logout = useCallback(async () => {

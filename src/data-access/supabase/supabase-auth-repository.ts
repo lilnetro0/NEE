@@ -96,20 +96,14 @@ export function createSupabaseAuthRepository(): AuthRepository {
     async loginWithPassword(input, options) {
       if (aborted(options)) return cancelledError();
       const supabase = getSupabaseClient();
-      const email = input.identifier.includes("@")
-        ? input.identifier
-        : `${input.identifier.replace(/\D/g, "")}@phone.local`;
+      if (!input.identifier.includes("@")) {
+        return mapSupabaseError({ message: "INVALID_CREDENTIALS" });
+      }
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: input.identifier.includes("@") ? input.identifier : email,
+        email: input.identifier,
         password: input.password,
       });
-      if (error) {
-        // Phone identifiers: try email field as phone OTP users may use email
-        if (!input.identifier.includes("@")) {
-          return mapSupabaseError({ message: "INVALID_CREDENTIALS" });
-        }
-        return mapSupabaseError(error);
-      }
+      if (error) return mapSupabaseError(error);
       if (!data.session || !data.user) return mapSupabaseError({ message: "INVALID_CREDENTIALS" });
       const user = await loadUser(data.user.id);
       if (!user) return mapSupabaseError({ message: "SESSION_EXPIRED" });
@@ -119,20 +113,24 @@ export function createSupabaseAuthRepository(): AuthRepository {
     async signup(input, options) {
       if (aborted(options)) return cancelledError();
       const supabase = getSupabaseClient();
-      if (input.email && input.password) {
-        const { error } = await supabase.auth.signUp({
-          email: input.email,
-          password: input.password,
-          options: {
-            data: {
-              display_name: input.displayName,
-              phone: input.phone,
-            },
+      const { data, error } = await supabase.auth.signUp({
+        email: input.email,
+        password: input.password,
+        options: {
+          data: {
+            display_name: input.displayName,
+            ...(input.phone ? { phone: input.phone } : {}),
           },
-        });
-        if (error) return mapSupabaseError(error);
+        },
+      });
+      if (error) return mapSupabaseError(error);
+      if (data.session && data.user) {
+        const user = await loadUser(data.user.id);
+        if (!user) return mapSupabaseError({ message: "SESSION_EXPIRED" });
+        return ok({ user, session: mapSessionTokens(data.session) });
       }
-      return this.requestPhoneOtp({ phone: input.phone, purpose: "signup" }, options);
+      // Project has "Confirm email" enabled — no session until the user verifies.
+      return mapSupabaseError({ message: "EMAIL_CONFIRMATION_REQUIRED" });
     },
 
     async requestPasswordReset(email, options) {

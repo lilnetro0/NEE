@@ -73,7 +73,8 @@ export type AuthErrorMessage =
   | "SESSION_EXPIRED"
   | "UNAUTHORIZED"
   | "INVALID_CODE"
-  | "VALIDATION";
+  | "VALIDATION"
+  | "EMAIL_CONFIRMATION_REQUIRED";
 
 export const AUTH_SECURE_SESSION_KEY = "auth.session";
 export const AUTH_SECURE_REAUTH_KEY = "reauth";

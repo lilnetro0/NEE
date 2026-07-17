@@ -21,21 +21,21 @@ export type VerifyOtpInput = {
 };
 
 export type PasswordLoginInput = {
-  /** Email (secondary identity) or phone. */
+  /** Email address. */
   identifier: string;
   password: string;
 };
 
 export type SignupInput = {
   displayName: string;
-  phone: string;
-  email?: string;
-  /** Optional password — phone OTP remains the primary verifier. */
-  password?: string;
+  email: string;
+  password: string;
+  /** Optional; phone OTP auth is deferred until SMS is configured. */
+  phone?: string;
 };
 
 export type AuthRepository = {
-  /** Start phone OTP as the primary authentication path. */
+  /** Phone OTP (deferred — kept for account phone change / future SMS). */
   requestPhoneOtp(input: RequestOtpInput, options?: RequestOptions): Promise<Result<OtpChallenge>>;
 
   /** Complete phone OTP and establish a session. */
@@ -47,14 +47,14 @@ export type AuthRepository = {
   /** Resend OTP for an existing challenge. */
   resendPhoneOtp(challengeId: string, options?: RequestOptions): Promise<Result<OtpChallenge>>;
 
-  /** Optional password authentication (email or phone identifier). */
+  /** Email + password authentication (primary sign-in). */
   loginWithPassword(
     input: PasswordLoginInput,
     options?: RequestOptions,
   ): Promise<Result<AuthSignInResult>>;
 
-  /** Create account draft then return an OTP challenge for the phone. */
-  signup(input: SignupInput, options?: RequestOptions): Promise<Result<OtpChallenge>>;
+  /** Create account with email + password and establish a session. */
+  signup(input: SignupInput, options?: RequestOptions): Promise<Result<AuthSignInResult>>;
 
   requestPasswordReset(email: string, options?: RequestOptions): Promise<Result<OtpChallenge>>;
 

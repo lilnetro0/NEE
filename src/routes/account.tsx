@@ -18,7 +18,6 @@ import {
   Package,
   AlertCircle,
   Smartphone,
-  Phone,
   Mail,
 } from "lucide-react";
 import { MobileScreen, TopBar, ScreenBody, BottomNav } from "@/components/shell/Shell";
@@ -85,7 +84,6 @@ function Account() {
         { icon: User, label: t("profile"), to: "/account/profile" },
         { icon: ShieldCheck, label: t("security"), to: "/account/security" },
         { icon: Smartphone, label: t("auth_activeSessions"), to: "/account/sessions" },
-        { icon: Phone, label: t("phone"), to: "/account/phone" },
         { icon: Mail, label: t("email"), to: "/account/email" },
         { icon: Bell, label: t("notifications"), to: "/notifications" },
         { icon: Heart, label: t("favorites"), to: "/favorites" },
