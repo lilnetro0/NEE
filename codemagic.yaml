@@ -12,9 +12,9 @@
 #   - Upload distribution .p12 (password when prompted)
 #   - Upload App Store .mobileprovision for com.lilnetro01.talal
 #
-# TestFlight upload — App Store Connect API key in Codemagic UI:
-#   Add encrypted / secret env var APP_STORE_CONNECT_PRIVATE_KEY = contents of AuthKey_PC52DBNDLS.p8
-#   (Key ID + Issuer ID are below; never commit the .p8 file)
+# TestFlight upload — App Store Connect integration in Codemagic UI:
+#   Team integrations → name must match `integrations.app_store_connect` (NETR)
+#   Release workflow uses auth: integration (no .p8 env vars in yaml)
 #
 # Release web env (set in Codemagic UI — no invented defaults):
 #   VITE_APP_ENV=production
@@ -98,6 +98,8 @@ workflows:
       - /tmp/xcodebuild_logs/*.log
 
   ios-release-workflow:
+    integrations:
+      app_store_connect: NETR
     name: NETRO iOS Release
     max_build_duration: 120
     instance_type: mac_mini_m2
@@ -111,8 +113,6 @@ workflows:
         XCODE_PROJECT: "App.xcodeproj"
         XCODE_SCHEME: "App"
         CM_CLONE_DEPTH: 1
-        APP_STORE_CONNECT_KEY_IDENTIFIER: PC52DBNDLS
-        APP_STORE_CONNECT_ISSUER_ID: e3140c78-ce9e-40ac-8a10-2f850f3d57f9
       node: 22
       xcode: latest
     scripts:
@@ -210,11 +210,9 @@ workflows:
       - /tmp/xcodebuild_logs/*.log
     publishing:
       app_store_connect:
-        # Private key: set APP_STORE_CONNECT_PRIVATE_KEY in Codemagic (AuthKey_PC52DBNDLS.p8 contents).
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        auth: integration
         submit_to_testflight: true
+        submit_to_app_store: false
 
   android-workflow:
     name: NETRO Android
