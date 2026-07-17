@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Phone } from "lucide-react";
 import { MobileScreen, TopBar, ScreenBody } from "@/components/shell/Shell";
 import { useI18n } from "@/i18n/I18nProvider";
-import { authApi } from "@/api/services";
+import { useUserActions } from "@/data-access";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/account/phone")({
@@ -14,6 +14,7 @@ function ChangePhone() {
   const { locale } = useI18n();
   const isAr = locale === "ar";
   const nav = useNavigate();
+  const { requestPhoneChange, verifyPhoneChange } = useUserActions();
   const [step, setStep] = useState<"input" | "otp">("input");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
@@ -26,21 +27,33 @@ function ChangePhone() {
     }
     setBusy(true);
     try {
-      await authApi.requestPhoneChange(phone);
+      const result = await requestPhoneChange(phone);
+      if (!result.ok) {
+        toast.error(result.error.message);
+        return;
+      }
       setStep("otp");
       toast.success(isAr ? "أرسلنا رمزاً برسالة نصية" : "We sent a code via SMS");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   };
 
   const verify = async () => {
     setBusy(true);
     try {
-      await authApi.verifyPhoneChange(code);
+      const result = await verifyPhoneChange(code);
+      if (!result.ok) {
+        toast.error(isAr ? "الرمز غير صحيح" : "Invalid code");
+        return;
+      }
       toast.success(isAr ? "تم تحديث الهاتف" : "Phone updated");
       nav({ to: "/account" });
     } catch {
       toast.error(isAr ? "الرمز غير صحيح" : "Invalid code");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Lock } from "lucide-react";
 import { MobileScreen, TopBar, ScreenBody } from "@/components/shell/Shell";
 import { useI18n } from "@/i18n/I18nProvider";
-import { authApi } from "@/api/services";
+import { useUserActions } from "@/data-access";
 import { secureStorage } from "@/platform/adapters";
 import { toast } from "sonner";
 
@@ -24,6 +24,7 @@ function Reauth() {
   const isAr = locale === "ar";
   const { redirect } = useSearch({ from: "/reauth" });
   const nav = useNavigate();
+  const { reauth } = useUserActions();
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -31,8 +32,12 @@ function Reauth() {
     if (password.length < 6) return;
     setBusy(true);
     try {
-      const { token } = await authApi.reauth(password);
-      await secureStorage.set("reauth", token);
+      const result = await reauth(password);
+      if (!result.ok) {
+        toast.error(isAr ? "كلمة المرور غير صحيحة" : "Incorrect password");
+        return;
+      }
+      await secureStorage.set("reauth", result.data.token);
       nav({ to: redirect });
     } catch {
       toast.error(isAr ? "كلمة المرور غير صحيحة" : "Incorrect password");

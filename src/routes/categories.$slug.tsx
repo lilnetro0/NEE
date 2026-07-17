@@ -3,7 +3,7 @@ import { useState } from "react";
 import { SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import { MobileScreen, ScreenBody, TopBar, BottomNav } from "@/components/shell/Shell";
 import { ProductCard } from "@/components/shell/Cards";
-import { products, findCategory } from "@/data/catalog";
+import { useCategory, useProducts } from "@/data-access";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 
@@ -15,12 +15,13 @@ type Sort = "popular" | "newest" | "price-asc" | "price-desc" | "discount";
 
 function CategoryPage() {
   const { slug } = Route.useParams();
-  const cat = findCategory(slug);
+  const { data: cat } = useCategory(slug);
+  const { data: products = [] } = useProducts({ categoryId: slug });
   const { t, locale } = useI18n();
   const [sort, setSort] = useState<Sort>("popular");
   const [sortOpen, setSortOpen] = useState(false);
 
-  const list = [...products.filter((p) => p.categoryId === slug)].sort((a, b) => {
+  const list = [...products].sort((a, b) => {
     if (sort === "price-asc") return a.fromPrice - b.fromPrice;
     if (sort === "price-desc") return b.fromPrice - a.fromPrice;
     if (sort === "discount") {

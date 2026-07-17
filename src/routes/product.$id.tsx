@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Heart, Star, Zap, Shield, Info, Minus, Plus, AlertTriangle } from "lucide-react";
 import { MobileScreen, TopBar } from "@/components/shell/Shell";
 import { ProductArt, ProductCard, SectionHeader, HScroll } from "@/components/shell/Cards";
-import { findProduct, products } from "@/data/catalog";
+import { useProduct, useProducts } from "@/data-access";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useStore } from "@/store/StoreProvider";
 import { toast } from "sonner";
@@ -15,19 +15,36 @@ export const Route = createFileRoute("/product/$id")({
 
 function ProductPage() {
   const { id } = Route.useParams();
-  const product = findProduct(id);
+  const { data: product, status } = useProduct(id);
+  const { data: products = [] } = useProducts();
   const { locale, t, formatPrice } = useI18n();
   const { add, isFavorite, toggleFavorite } = useStore();
   const nav = useNavigate();
 
   const [tab, setTab] = useState<"desc" | "redeem" | "reviews">("desc");
-  const [denominationId, setDenominationId] = useState<string | undefined>(
-    product?.kind === "gift_card" ? product.denominations[0]?.id : undefined,
-  );
-  const [pkgId, setPkgId] = useState<string | undefined>(
-    product?.kind === "direct_topup" ? product.packages[0]?.id : undefined,
-  );
+  const [denominationId, setDenominationId] = useState<string | undefined>();
+  const [pkgId, setPkgId] = useState<string | undefined>();
   const [qty, setQty] = useState(1);
+
+  useEffect(() => {
+    if (!product) return;
+    if (product.kind === "gift_card") {
+      setDenominationId(product.denominations[0]?.id);
+      setPkgId(undefined);
+    } else {
+      setPkgId(product.packages[0]?.id);
+      setDenominationId(undefined);
+    }
+  }, [product]);
+
+  if (status === "loading") {
+    return (
+      <MobileScreen>
+        <TopBar title="" showBack />
+        <div className="p-6 text-center text-sm text-muted-foreground">{t("loading")}</div>
+      </MobileScreen>
+    );
+  }
 
   if (!product) {
     return (

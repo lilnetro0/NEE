@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { StatusScreen } from "@/components/common/StatusScreen";
 import { useI18n } from "@/i18n/I18nProvider";
-import { fulfillmentApi } from "@/api/services";
+import { useOrderMutations } from "@/data-access";
 import type { FulfillmentStatus } from "@/domain/order";
 
 export const Route = createFileRoute("/order/$id/fulfillment")({
@@ -15,21 +15,24 @@ function FulfillmentPending() {
   const { id } = Route.useParams();
   const { locale } = useI18n();
   const isAr = locale === "ar";
+  const { pollFulfillment } = useOrderMutations();
   const [state, setState] = useState<FulfillmentStatus>("processing");
 
   useEffect(() => {
-    let mounted = true;
+    const controller = new AbortController();
     const poll = async () => {
-      const r = await fulfillmentApi.poll(id);
-      if (!mounted) return;
-      if (r.state === "fulfilled") setState("fulfilled");
+      const r = await pollFulfillment(id, controller.signal);
+      if (controller.signal.aborted || !r.ok) return;
+      if (r.data.state === "fulfilled") setState("fulfilled");
     };
-    const t = setInterval(poll, 2000);
+    const t = setInterval(() => {
+      void poll();
+    }, 2000);
     return () => {
-      mounted = false;
+      controller.abort();
       clearInterval(t);
     };
-  }, [id]);
+  }, [id, pollFulfillment]);
 
   if (state === "fulfilled") {
     return (

@@ -1,13 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Zap, AlertTriangle, ShieldCheck } from "lucide-react";
 import { MobileScreen, TopBar } from "@/components/shell/Shell";
-import { findProduct } from "@/data/catalog";
 import { isTopUp } from "@/domain/product";
 import type { AccountVerification } from "@/domain/product";
 import { validateAll, type FieldValues } from "@/domain/forms";
 import { DynamicForm } from "@/components/forms/DynamicForm";
-import { productsApi } from "@/api/services";
+import { useProduct, useVerifyAccount } from "@/data-access";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useStore } from "@/store/StoreProvider";
 import { toast } from "sonner";
@@ -18,21 +17,34 @@ export const Route = createFileRoute("/product/$id/topup")({
 
 function TopUp() {
   const { id } = Route.useParams();
-  const domainProduct = findProduct(id);
+  const { data: loaded, status } = useProduct(id);
+  const domainProduct = loaded && isTopUp(loaded) ? loaded : undefined;
+  const verifyAccount = useVerifyAccount();
   const { t, locale, formatPrice } = useI18n();
   const isAr = locale === "ar";
   const { add } = useStore();
   const nav = useNavigate();
 
-  const [pkgId, setPkgId] = useState<string | undefined>(
-    domainProduct && isTopUp(domainProduct) ? domainProduct.packages[0]?.id : undefined,
-  );
+  const [pkgId, setPkgId] = useState<string | undefined>();
   const [values, setValues] = useState<FieldValues>({});
   const [verification, setVerification] = useState<AccountVerification | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
 
-  if (!domainProduct || !isTopUp(domainProduct)) {
+  useEffect(() => {
+    if (domainProduct) setPkgId(domainProduct.packages[0]?.id);
+  }, [domainProduct]);
+
+  if (status === "loading") {
+    return (
+      <MobileScreen>
+        <TopBar title="Top-up" showBack />
+        <div className="p-6 text-center text-sm text-muted-foreground">{t("loading")}</div>
+      </MobileScreen>
+    );
+  }
+
+  if (!domainProduct) {
     return (
       <MobileScreen>
         <TopBar title="Top-up" showBack />
@@ -56,8 +68,8 @@ function TopUp() {
     if (domainProduct.validation.accountLookup !== "supported") return;
     setVerifying(true);
     try {
-      const v = await productsApi.verifyAccount(domainProduct.id, values);
-      setVerification(v);
+      const result = await verifyAccount(domainProduct.id, values);
+      if (result.ok) setVerification(result.data);
     } finally {
       setVerifying(false);
     }

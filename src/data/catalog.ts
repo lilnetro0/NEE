@@ -1,20 +1,9 @@
 import type { CurrencyCode } from "@/domain/common";
+import type { Brand, Category } from "@/domain/catalog";
 import type { FieldSchema } from "@/domain/forms";
 import type { DirectTopUpProduct, GiftCardProduct, Product } from "@/domain/product";
 
-export type Category = {
-  id: string;
-  name: { en: string; ar: string };
-  icon: string; // emoji or lucide name
-  color: string; // tailwind gradient class safe id
-};
-
-export type Brand = {
-  id: string;
-  name: string;
-  color: string;
-  logo: string; // emoji fallback
-};
+export type { Brand, Category } from "@/domain/catalog";
 
 type ProductSeed = {
   id: string;

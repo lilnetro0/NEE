@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Mail } from "lucide-react";
 import { MobileScreen, TopBar, ScreenBody } from "@/components/shell/Shell";
 import { useI18n } from "@/i18n/I18nProvider";
-import { authApi } from "@/api/services";
+import { useUserActions } from "@/data-access";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/account/email")({
@@ -14,6 +14,7 @@ function ChangeEmail() {
   const { locale } = useI18n();
   const isAr = locale === "ar";
   const nav = useNavigate();
+  const { requestEmailChange, verifyEmailChange } = useUserActions();
   const [step, setStep] = useState<"input" | "otp">("input");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -26,21 +27,33 @@ function ChangeEmail() {
     }
     setBusy(true);
     try {
-      await authApi.requestEmailChange(email);
+      const result = await requestEmailChange(email);
+      if (!result.ok) {
+        toast.error(result.error.message);
+        return;
+      }
       setStep("otp");
       toast.success(isAr ? "أرسلنا رمزاً إلى بريدك" : "We sent a verification code");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   };
 
   const verify = async () => {
     setBusy(true);
     try {
-      await authApi.verifyEmailChange(code);
+      const result = await verifyEmailChange(code);
+      if (!result.ok) {
+        toast.error(isAr ? "الرمز غير صحيح" : "Invalid code");
+        return;
+      }
       toast.success(isAr ? "تم تحديث البريد" : "Email updated");
       nav({ to: "/account" });
     } catch {
       toast.error(isAr ? "الرمز غير صحيح" : "Invalid code");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (

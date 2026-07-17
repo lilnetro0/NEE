@@ -1,6 +1,8 @@
 import type { Order } from "@/domain/order";
+import type { Notification } from "@/domain/notification";
 
 export type { OrderDisplayStatus as OrderStatus } from "@/domain/order";
+export type { Notification as NotificationItem } from "@/domain/notification";
 
 const now = Date.now();
 const daysAgo = (d: number) => new Date(now - d * 86400_000).toISOString();
@@ -144,16 +146,7 @@ export const orders: Order[] = [
   },
 ];
 
-export type NotificationItem = {
-  id: string;
-  title: { en: string; ar: string };
-  body: { en: string; ar: string };
-  time: string;
-  read: boolean;
-  type: "order" | "promo" | "security" | "support";
-};
-
-export const notifications: NotificationItem[] = [
+export const notifications: Notification[] = [
   {
     id: "n1",
     title: { en: "Order delivered", ar: "تم تسليم الطلب" },

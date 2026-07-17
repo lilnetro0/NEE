@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MobileScreen, TopBar, ScreenBody } from "@/components/shell/Shell";
-import { notifications } from "@/data/orders";
+import { useNotifications } from "@/data-access";
 import { useI18n } from "@/i18n/I18nProvider";
 import { Bell, Package, Tag, Shield, LifeBuoy } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ export const Route = createFileRoute("/notifications")({
 
 function Notifications() {
   const { t, locale } = useI18n();
+  const { data: notifications = [] } = useNotifications();
   return (
     <MobileScreen>
       <TopBar title={t("notifications")} showBack showNotif={false} />
@@ -29,7 +30,13 @@ function Notifications() {
             {notifications.map((n) => {
               const Icon = iconFor[n.type];
               return (
-                <div key={n.id} className={cn("flex gap-3 rounded-2xl p-4", n.read ? "bg-card" : "bg-brand/5 border border-brand/20")}>
+                <div
+                  key={n.id}
+                  className={cn(
+                    "flex gap-3 rounded-2xl p-4",
+                    n.read ? "bg-card" : "bg-brand/5 border border-brand/20",
+                  )}
+                >
                   <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface">
                     <Icon className="h-5 w-5 text-brand" />
                   </div>

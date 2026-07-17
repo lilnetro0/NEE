@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MobileScreen, ScreenBody, TopBar, BottomNav } from "@/components/shell/Shell";
 import { ProductCard } from "@/components/shell/Cards";
-import { findBrand, products } from "@/data/catalog";
+import { useBrand, useProducts } from "@/data-access";
 import { useI18n } from "@/i18n/I18nProvider";
 
 export const Route = createFileRoute("/brands/$slug")({
@@ -10,9 +10,10 @@ export const Route = createFileRoute("/brands/$slug")({
 
 function BrandPage() {
   const { slug } = Route.useParams();
-  const brand = findBrand(slug);
+  const { data: brand } = useBrand(slug);
+  const { data: products = [] } = useProducts({ brandId: slug });
   const { t } = useI18n();
-  const list = products.filter((p) => p.brandId === slug);
+  const list = products;
 
   return (
     <MobileScreen>
@@ -34,12 +35,12 @@ function BrandPage() {
         )}
         {list.length ? (
           <div className="grid grid-cols-2 gap-3">
-            {list.map((p) => <ProductCard key={p.id} product={p} size="md" />)}
+            {list.map((p) => (
+              <ProductCard key={p.id} product={p} size="md" />
+            ))}
           </div>
         ) : (
-          <div className="mt-16 text-center text-sm text-muted-foreground">
-            {t("empty_search")}
-          </div>
+          <div className="mt-16 text-center text-sm text-muted-foreground">{t("empty_search")}</div>
         )}
       </ScreenBody>
       <BottomNav />

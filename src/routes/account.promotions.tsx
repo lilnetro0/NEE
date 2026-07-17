@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Ticket } from "lucide-react";
 import { MobileScreen, TopBar, ScreenBody } from "@/components/shell/Shell";
+import { usePromotions } from "@/data-access";
 import { useI18n } from "@/i18n/I18nProvider";
 
 export const Route = createFileRoute("/account/promotions")({
@@ -8,24 +9,29 @@ export const Route = createFileRoute("/account/promotions")({
 });
 
 function Promotions() {
-  const { t } = useI18n();
-  const promos = [
-    { code: "NETRO10", title: "10% off your next order", exp: "Dec 31" },
-    { code: "GAMER25", title: "25% off Spotify Premium", exp: "This week" },
-    { code: "WELCOME", title: "SAR 20 credit on first order", exp: "One-time" },
-  ];
+  const { t, locale } = useI18n();
+  const { data: promos = [] } = usePromotions();
   return (
     <MobileScreen>
       <TopBar title={t("promotions")} showBack showCart={false} />
       <ScreenBody className="space-y-3">
         {promos.map((p) => (
-          <div key={p.code} className="flex items-center gap-3 overflow-hidden rounded-2xl border border-dashed border-brand/40 bg-brand/5 p-4">
-            <div className="grid h-12 w-12 place-items-center rounded-xl gradient-brand text-brand-foreground"><Ticket className="h-5 w-5" /></div>
-            <div className="flex-1">
-              <div className="text-sm font-semibold">{p.title}</div>
-              <div className="text-xs text-muted-foreground">Expires {p.exp}</div>
+          <div
+            key={p.code}
+            className="flex items-center gap-3 overflow-hidden rounded-2xl border border-dashed border-brand/40 bg-brand/5 p-4"
+          >
+            <div className="grid h-12 w-12 place-items-center rounded-xl gradient-brand text-brand-foreground">
+              <Ticket className="h-5 w-5" />
             </div>
-            <span className="rounded-full bg-brand px-3 py-1.5 font-mono text-[11px] font-bold text-brand-foreground">{p.code}</span>
+            <div className="flex-1">
+              <div className="text-sm font-semibold">{p.title[locale]}</div>
+              <div className="text-xs text-muted-foreground">
+                Expires {p.expiresLabel[locale]}
+              </div>
+            </div>
+            <span className="rounded-full bg-brand px-3 py-1.5 font-mono text-[11px] font-bold text-brand-foreground">
+              {p.code}
+            </span>
           </div>
         ))}
       </ScreenBody>

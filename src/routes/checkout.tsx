@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Mail,
   Smartphone,
@@ -18,7 +18,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { useStore } from "@/store/StoreProvider";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { quotesApi, ordersApi } from "@/api/services";
+import { useOrderMutations } from "@/data-access";
 import type { Quote } from "@/domain/order";
 import type { CheckoutState } from "@/domain/order";
 import { resolveCapabilities } from "@/platform/capabilities";
@@ -44,6 +44,7 @@ function Checkout() {
   const isAr = locale === "ar";
   const { items, subtotal, clear } = useStore();
   const nav = useNavigate();
+  const { createQuote, refreshQuote: refreshQuoteRepo, create } = useOrderMutations();
 
   // Contact
   const [email, setEmail] = useState("ahmad@example.com");
@@ -54,7 +55,6 @@ function Checkout() {
   const [state, setState] = useState<CheckoutState>("draft");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [now, setNow] = useState(Date.now());
-  const abortRef = useRef(false);
 
   const caps = useMemo(
     () =>
@@ -85,9 +85,10 @@ function Checkout() {
   // Create initial quote once cart is populated.
   useEffect(() => {
     if (items.length === 0 || quote) return;
+    const controller = new AbortController();
     setState("validating");
-    quotesApi
-      .create({
+    void createQuote(
+      {
         items: items.map((i) => ({
           productId: i.productId,
           sku: i.kind === "gift_card" ? i.denomination.id : i.package.id,
@@ -97,17 +98,26 @@ function Checkout() {
         country: "SA",
         displayCurrency: "SAR",
         paymentCurrency: "SAR",
-      })
-      .then((q) => {
-        if (abortRef.current) return;
-        setQuote({ ...q, subtotal, total: subtotal * 1.15, vat: subtotal * 0.15 });
-        setState("awaiting_payment");
-      })
-      .catch(() => setState("draft"));
+      },
+      { signal: controller.signal },
+    ).then((result) => {
+      if (controller.signal.aborted) return;
+      if (!result.ok) {
+        setState("draft");
+        return;
+      }
+      setQuote({
+        ...result.data,
+        subtotal,
+        total: subtotal * 1.15,
+        vat: subtotal * 0.15,
+      });
+      setState("awaiting_payment");
+    });
     return () => {
-      abortRef.current = true;
+      controller.abort();
     };
-  }, [items, quote, subtotal]);
+  }, [items, quote, subtotal, createQuote]);
 
   // Tick every second to track quote expiration.
   useEffect(() => {
@@ -123,15 +133,20 @@ function Checkout() {
   const refreshQuote = async () => {
     if (!quote) return;
     setState("validating");
-    try {
-      const q = await quotesApi.refresh(quote.id);
-      setQuote({ ...q, subtotal, total: subtotal * 1.15, vat: subtotal * 0.15 });
-      setState("awaiting_payment");
-      toast.success(isAr ? "تم تحديث السعر" : "Quote refreshed");
-    } catch {
+    const result = await refreshQuoteRepo(quote.id);
+    if (!result.ok) {
       setState("awaiting_payment");
       toast.error(isAr ? "فشل التحديث" : "Refresh failed");
+      return;
     }
+    setQuote({
+      ...result.data,
+      subtotal,
+      total: subtotal * 1.15,
+      vat: subtotal * 0.15,
+    });
+    setState("awaiting_payment");
+    toast.success(isAr ? "تم تحديث السعر" : "Quote refreshed");
   };
 
   const submit = async () => {
@@ -144,11 +159,12 @@ function Checkout() {
       setState("payment_authorized");
       await new Promise((r) => setTimeout(r, 300));
 
-      const order = await ordersApi.create({ quoteId: quote.id, paymentMethod: method });
+      const created = await create({ quoteId: quote.id, paymentMethod: method });
+      if (!created.ok) throw new Error(created.error.message);
       setState("order_created");
       clear();
       // Kick off fulfillment; land on a status screen (not "success").
-      nav({ to: "/order/$id/fulfillment", params: { id: order.id } });
+      nav({ to: "/order/$id/fulfillment", params: { id: created.data.id } });
     } catch (e) {
       console.error(e);
       setState("awaiting_payment");

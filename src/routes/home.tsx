@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Search, Zap, Flame, Sparkles, Gift } from "lucide-react";
+import { Search, Flame, Sparkles } from "lucide-react";
 import { MobileScreen, ScreenBody, TopBar, BottomNav } from "@/components/shell/Shell";
 import {
   BrandTile,
@@ -8,21 +8,32 @@ import {
   ProductCard,
   SectionHeader,
 } from "@/components/shell/Cards";
-import { brands, categories, products } from "@/data/catalog";
 import { useI18n } from "@/i18n/I18nProvider";
+import {
+  useBrands,
+  useCategories,
+  useCurrentUser,
+  useProducts,
+} from "@/data-access";
 
 export const Route = createFileRoute("/home")({
   component: Home,
 });
 
 function Home() {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
+  const { data: products = [] } = useProducts();
+  const { data: categories = [] } = useCategories();
+  const { data: brands = [] } = useBrands();
+  const { data: user } = useCurrentUser();
+
   const featured = products
     .filter((p) => p.tags?.includes("bestseller") || p.tags?.includes("new"))
     .slice(0, 8);
   const offers = products.filter((p) => p.compareAt).slice(0, 8);
   const topups = products.filter((p) => p.kind === "direct_topup").slice(0, 8);
   const gifts = products.filter((p) => p.kind === "gift_card").slice(0, 8);
+  const firstName = user?.displayName.split(" ")[0] ?? "Ahmad";
 
   return (
     <MobileScreen>
@@ -32,12 +43,11 @@ function Home() {
             <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
               {t("hello")} 👋
             </div>
-            <div className="font-display text-lg font-bold">Ahmad</div>
+            <div className="font-display text-lg font-bold">{firstName}</div>
           </div>
         }
       />
       <ScreenBody>
-        {/* Search */}
         <Link
           to="/search"
           className="flex h-12 items-center gap-2 rounded-2xl border border-input bg-surface px-4 text-sm text-muted-foreground"
@@ -46,7 +56,6 @@ function Home() {
           {t("search")}...
         </Link>
 
-        {/* Promo hero */}
         <div className="relative mt-4 overflow-hidden rounded-3xl gradient-hero p-5 text-white shadow-elevated">
           <div className="pointer-events-none absolute -right-8 -top-6 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
           <div className="pointer-events-none absolute -bottom-10 -left-8 h-40 w-40 rounded-full bg-cyan/25 blur-2xl" />
@@ -64,7 +73,6 @@ function Home() {
           </div>
         </div>
 
-        {/* Categories */}
         <SectionHeader title={t("browseCategories")} to="/categories" />
         <HScroll>
           {categories.slice(0, 8).map((c) => (
@@ -74,7 +82,6 @@ function Home() {
           ))}
         </HScroll>
 
-        {/* Best sellers */}
         <SectionHeader title={t("bestSellers")} to="/search" />
         <HScroll>
           {featured.map((p) => (
@@ -82,7 +89,6 @@ function Home() {
           ))}
         </HScroll>
 
-        {/* Gift cards */}
         <SectionHeader title={t("giftCards")} to="/categories/gift-cards" />
         <HScroll>
           {gifts.map((p) => (
@@ -90,7 +96,6 @@ function Home() {
           ))}
         </HScroll>
 
-        {/* Top-ups */}
         <SectionHeader title={t("topUps")} to="/categories/top-ups" />
         <HScroll>
           {topups.map((p) => (
@@ -98,7 +103,6 @@ function Home() {
           ))}
         </HScroll>
 
-        {/* Offers */}
         {offers.length > 0 && (
           <>
             <SectionHeader title={t("specialOffers")} />
@@ -110,7 +114,6 @@ function Home() {
           </>
         )}
 
-        {/* Brands */}
         <SectionHeader title={t("brands")} to="/categories" />
         <HScroll>
           {brands.slice(0, 12).map((b) => (

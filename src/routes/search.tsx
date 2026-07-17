@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { Search as SearchIcon, X, TrendingUp, Clock } from "lucide-react";
 import { MobileScreen, ScreenBody, TopBar, BottomNav } from "@/components/shell/Shell";
 import { ProductCard } from "@/components/shell/Cards";
-import { products } from "@/data/catalog";
 import { useI18n } from "@/i18n/I18nProvider";
+import { useProducts } from "@/data-access";
 
 export const Route = createFileRoute("/search")({
   component: Search,
@@ -13,30 +13,38 @@ export const Route = createFileRoute("/search")({
 const trending = ["PUBG UC", "PSN 100", "Steam Wallet", "Netflix", "Free Fire", "Roblox"];
 
 function Search() {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const [q, setQ] = useState("");
   const [recent, setRecent] = useState<string[]>([]);
+  const { data: products = [] } = useProducts();
 
   useEffect(() => {
     try {
       const r = localStorage.getItem("netro:recent-search");
       if (r) setRecent(JSON.parse(r));
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const save = (term: string) => {
     setRecent((prev) => {
       const next = [term, ...prev.filter((x) => x !== term)].slice(0, 6);
-      try { localStorage.setItem("netro:recent-search", JSON.stringify(next)); } catch {}
+      try {
+        localStorage.setItem("netro:recent-search", JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
       return next;
     });
   };
 
-  const results = q
-    ? products.filter((p) =>
-        p.title.en.toLowerCase().includes(q.toLowerCase()) ||
-        p.title.ar.includes(q) ||
-        p.brandId.includes(q.toLowerCase()),
+  const searchResults = q
+    ? products.filter(
+        (p) =>
+          p.title.en.toLowerCase().includes(q.toLowerCase()) ||
+          p.title.ar.includes(q) ||
+          p.brandId.includes(q.toLowerCase()),
       )
     : [];
 
@@ -72,13 +80,23 @@ function Search() {
               <div className="mb-6">
                 <div className="mb-2 flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-muted-foreground">Recent</h3>
-                  <button onClick={() => { setRecent([]); localStorage.removeItem("netro:recent-search"); }} className="text-xs text-brand">
+                  <button
+                    onClick={() => {
+                      setRecent([]);
+                      localStorage.removeItem("netro:recent-search");
+                    }}
+                    className="text-xs text-brand"
+                  >
                     {t("clear")}
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {recent.map((r) => (
-                    <button key={r} onClick={() => setQ(r)} className="flex items-center gap-1.5 rounded-full bg-surface px-3 py-2 text-xs">
+                    <button
+                      key={r}
+                      onClick={() => setQ(r)}
+                      className="flex items-center gap-1.5 rounded-full bg-surface px-3 py-2 text-xs"
+                    >
                       <Clock className="h-3 w-3 text-muted-foreground" /> {r}
                     </button>
                   ))}
@@ -90,21 +108,29 @@ function Search() {
             </h3>
             <div className="flex flex-wrap gap-2">
               {trending.map((r) => (
-                <button key={r} onClick={() => setQ(r)} className="rounded-full bg-surface px-3 py-2 text-xs font-medium">
+                <button
+                  key={r}
+                  onClick={() => setQ(r)}
+                  className="rounded-full bg-surface px-3 py-2 text-xs font-medium"
+                >
                   {r}
                 </button>
               ))}
             </div>
             <h3 className="mb-3 mt-6 font-display text-lg font-bold">Popular</h3>
             <div className="grid grid-cols-2 gap-3">
-              {products.slice(0, 6).map((p) => <ProductCard key={p.id} product={p} size="md" />)}
+              {products.slice(0, 6).map((p) => (
+                <ProductCard key={p.id} product={p} size="md" />
+              ))}
             </div>
           </>
-        ) : results.length ? (
+        ) : searchResults.length ? (
           <>
-            <p className="mb-3 text-xs text-muted-foreground">{results.length} results</p>
+            <p className="mb-3 text-xs text-muted-foreground">{searchResults.length} results</p>
             <div className="grid grid-cols-2 gap-3">
-              {results.map((p) => <ProductCard key={p.id} product={p} size="md" />)}
+              {searchResults.map((p) => (
+                <ProductCard key={p.id} product={p} size="md" />
+              ))}
             </div>
           </>
         ) : (

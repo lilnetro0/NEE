@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Heart, Zap } from "lucide-react";
-import type { Brand, Category } from "@/data/catalog";
+import type { Brand, Category } from "@/domain/catalog";
 import type { Product } from "@/domain/product";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useStore } from "@/store/StoreProvider";

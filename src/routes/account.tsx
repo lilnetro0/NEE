@@ -4,6 +4,7 @@ import {
   FileText, Info, LogOut, Wallet, Ticket, ChevronRight, Globe2,
 } from "lucide-react";
 import { MobileScreen, TopBar, ScreenBody, BottomNav } from "@/components/shell/Shell";
+import { useCurrentUser } from "@/data-access";
 import { useI18n } from "@/i18n/I18nProvider";
 
 export const Route = createFileRoute("/account")({
@@ -12,6 +13,10 @@ export const Route = createFileRoute("/account")({
 
 function Account() {
   const { t, locale, dir } = useI18n();
+  const { data: user } = useCurrentUser();
+  const displayName = user?.displayName ?? "Ahmad Al-Sayed";
+  const email = user?.email ?? "ahmad@example.com";
+  const initial = displayName.slice(0, 1).toUpperCase();
   const groups: { title: string; items: { icon: typeof User; label: string; to: string; sub?: string }[] }[] = [
     {
       title: t("profile"),
@@ -53,10 +58,12 @@ function Account() {
       <TopBar title={t("nav_account")} showCart={false} />
       <ScreenBody>
         <div className="flex items-center gap-3 rounded-3xl gradient-hero p-4 text-white shadow-elevated">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-white/20 font-black backdrop-blur">A</div>
+          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-white/20 font-black backdrop-blur">
+            {initial}
+          </div>
           <div className="min-w-0 flex-1">
-            <div className="font-display text-lg font-black">Ahmad Al-Sayed</div>
-            <div className="truncate text-xs text-white/70">ahmad@example.com</div>
+            <div className="font-display text-lg font-black">{displayName}</div>
+            <div className="truncate text-xs text-white/70">{email}</div>
           </div>
           <Link to="/account/profile" className="rounded-full bg-white/20 px-3 py-1.5 text-xs font-bold backdrop-blur">
             Edit

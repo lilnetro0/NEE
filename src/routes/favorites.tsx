@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { MobileScreen, TopBar, ScreenBody, BottomNav } from "@/components/shell/Shell";
 import { ProductCard } from "@/components/shell/Cards";
 import { useStore } from "@/store/StoreProvider";
-import { products } from "@/data/catalog";
+import { useProducts } from "@/data-access";
 import { useI18n } from "@/i18n/I18nProvider";
 import { Heart } from "lucide-react";
 
@@ -13,7 +13,10 @@ export const Route = createFileRoute("/favorites")({
 function Favorites() {
   const { favorites } = useStore();
   const { t } = useI18n();
-  const list = products.filter((p) => favorites.includes(p.id));
+  const { data: products = [] } = useProducts(
+    favorites.length ? { ids: favorites } : undefined,
+  );
+  const list = favorites.length ? products : [];
   return (
     <MobileScreen>
       <TopBar title={t("favorites")} showBack />
@@ -27,7 +30,9 @@ function Favorites() {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            {list.map((p) => <ProductCard key={p.id} product={p} size="md" />)}
+            {list.map((p) => (
+              <ProductCard key={p.id} product={p} size="md" />
+            ))}
           </div>
         )}
       </ScreenBody>

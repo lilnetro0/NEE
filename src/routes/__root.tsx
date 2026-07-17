@@ -14,6 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider } from "../i18n/I18nProvider";
 import { ThemeProvider } from "../theme/ThemeProvider";
 import { StoreProvider } from "../store/StoreProvider";
+import { RepositoriesProvider } from "../data-access/RepositoriesProvider";
 
 function NotFoundComponent() {
   return (
@@ -116,8 +117,10 @@ function RootComponent() {
       <ThemeProvider>
         <I18nProvider>
           <StoreProvider>
-            <Outlet />
-            <Toaster position="top-center" theme="dark" />
+            <RepositoriesProvider>
+              <Outlet />
+              <Toaster position="top-center" theme="dark" />
+            </RepositoriesProvider>
           </StoreProvider>
         </I18nProvider>
       </ThemeProvider>

@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Package, Copy, Check, Download, MessageCircle, Eye, EyeOff } from "lucide-react";
+import { Package } from "lucide-react";
 import { MobileScreen, TopBar, ScreenBody, BottomNav } from "@/components/shell/Shell";
-import { orders, type OrderStatus } from "@/data/orders";
+import type { OrderDisplayStatus } from "@/domain/order";
+import { useOrders } from "@/data-access";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +11,7 @@ export const Route = createFileRoute("/orders")({
   component: Orders,
 });
 
+type OrderStatus = OrderDisplayStatus;
 const filters: (OrderStatus | "all")[] = ["all", "processing", "completed", "failed", "refunded"];
 
 function statusColor(s: OrderStatus) {
@@ -22,7 +24,8 @@ function statusColor(s: OrderStatus) {
 function Orders() {
   const { t, locale, formatPrice } = useI18n();
   const [f, setF] = useState<OrderStatus | "all">("all");
-  const list = f === "all" ? orders : orders.filter((o) => o.displayStatus === f);
+  const { data: orders = [] } = useOrders(f === "all" ? undefined : f);
+  const list = orders;
 
   return (
     <MobileScreen>

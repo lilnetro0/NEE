@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Copy, Check, Download, MessageCircle, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { MobileScreen, TopBar, ScreenBody } from "@/components/shell/Shell";
-import { orders } from "@/data/orders";
+import { useOrder } from "@/data-access";
 import { useI18n } from "@/i18n/I18nProvider";
 import { toast } from "sonner";
 
@@ -15,8 +15,19 @@ function OrderDetail() {
   const { t, locale, formatPrice } = useI18n();
   const [reveal, setReveal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { data: order, status } = useOrder(id);
 
-  const order = orders.find((o) => o.id === id) ?? orders[0];
+  if (status === "loading" || !order) {
+    return (
+      <MobileScreen>
+        <TopBar title={id} showBack showCart={false} />
+        <ScreenBody>
+          <div className="py-16 text-center text-sm text-muted-foreground">{t("loading")}</div>
+        </ScreenBody>
+      </MobileScreen>
+    );
+  }
+
   const item = order.items[0];
   const code = item?.productKind === "gift_card" ? item.code?.value : undefined;
 

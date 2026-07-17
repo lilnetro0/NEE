@@ -4,9 +4,9 @@
  * no deposits, withdrawals, or peer-to-peer transfers.
  */
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import type { StoreCredit } from "@/domain/order";
-import { creditApi } from "@/api/services";
+import { useRepositories } from "@/data-access/RepositoriesProvider";
 
 type CreditCtx = {
   status: "loading" | "ready" | "error";
@@ -17,25 +17,31 @@ type CreditCtx = {
 const Ctx = createContext<CreditCtx | null>(null);
 
 export function CreditProvider({ children }: { children: ReactNode }) {
+  const { users } = useRepositories();
   const [credit, setCredit] = useState<StoreCredit | null>(null);
   const [status, setStatus] = useState<CreditCtx["status"]>("loading");
 
-  const load = () => {
+  const load = useCallback(() => {
+    const controller = new AbortController();
     setStatus("loading");
-    creditApi
-      .get()
-      .then((c) => {
-        setCredit(c);
-        setStatus("ready");
-      })
-      .catch(() => setStatus("error"));
-  };
+    void users.getStoreCredit({ signal: controller.signal }).then((result) => {
+      if (controller.signal.aborted) return;
+      if (!result.ok) {
+        setStatus("error");
+        return;
+      }
+      setCredit(result.data);
+      setStatus("ready");
+    });
+    return () => controller.abort();
+  }, [users]);
 
   useEffect(() => {
-    load();
-  }, []);
+    const cancel = load();
+    return cancel;
+  }, [load]);
 
-  return <Ctx.Provider value={{ status, credit, refresh: load }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ status, credit, refresh: () => void load() }}>{children}</Ctx.Provider>;
 }
 
 export function useStoreCredit() {

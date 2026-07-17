@@ -3,7 +3,7 @@ import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { MobileScreen, TopBar, ScreenBody } from "@/components/shell/Shell";
 import { useI18n } from "@/i18n/I18nProvider";
-import { authApi } from "@/api/services";
+import { useUserActions } from "@/data-access";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/account/delete")({
@@ -14,6 +14,7 @@ function DeleteAccount() {
   const { locale } = useI18n();
   const isAr = locale === "ar";
   const nav = useNavigate();
+  const { deleteAccount } = useUserActions();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
@@ -24,7 +25,11 @@ function DeleteAccount() {
     if (!canSubmit) return;
     setBusy(true);
     try {
-      await authApi.deleteAccount(password);
+      const result = await deleteAccount(password);
+      if (!result.ok) {
+        toast.error(isAr ? "فشل الحذف" : "Deletion failed");
+        return;
+      }
       toast.success(isAr ? "تم حذف الحساب" : "Account deleted");
       nav({ to: "/auth/login" });
     } catch {

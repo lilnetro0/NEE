@@ -3,7 +3,8 @@ import { useState } from "react";
 import { LifeBuoy } from "lucide-react";
 import { MobileScreen, TopBar, ScreenBody } from "@/components/shell/Shell";
 import { useI18n } from "@/i18n/I18nProvider";
-import { supportApi, type SupportReason } from "@/api/services";
+import { useRepositories } from "@/data-access";
+import type { SupportReason } from "@/domain/support";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/support/new")({
@@ -25,6 +26,7 @@ function NewSupportTicket() {
   const { locale } = useI18n();
   const isAr = locale === "ar";
   const nav = useNavigate();
+  const { support } = useRepositories();
   const [reason, setReason] = useState<SupportReason | null>(null);
   const [orderId, setOrderId] = useState("");
   const [desc, setDesc] = useState("");
@@ -37,8 +39,16 @@ function NewSupportTicket() {
     }
     setBusy(true);
     try {
-      const r = await supportApi.submit({ reason, orderId: orderId || undefined, description: desc });
-      toast.success((isAr ? "تم إنشاء التذكرة " : "Ticket created ") + r.id);
+      const r = await support.submit({
+        reason,
+        orderId: orderId || undefined,
+        description: desc,
+      });
+      if (!r.ok) {
+        toast.error(r.error.message);
+        return;
+      }
+      toast.success((isAr ? "تم إنشاء التذكرة " : "Ticket created ") + r.data.id);
       nav({ to: "/support" });
     } finally {
       setBusy(false);
