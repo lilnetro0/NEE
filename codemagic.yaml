@@ -52,13 +52,11 @@ workflows:
       - build/ios/ipa/*.ipa
       - ios/App/build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
-    publishing:
-      email:
-        recipients:
-          - $CM_BUILD_EMAIL
-        notify:
-          success: true
-          failure: true
+    # Optional later:
+    # publishing:
+    #   email:
+    #     recipients:
+    #       - you@example.com
 
   android-workflow:
     name: NETRO Android
@@ -93,10 +91,8 @@ workflows:
     artifacts:
       - android/app/build/outputs/**/*.apk
       - android/app/build/outputs/**/*.aab
-    publishing:
-      email:
-        recipients:
-          - $CM_BUILD_EMAIL
-        notify:
-          success: true
-          failure: true
+    # Optional later:
+    # publishing:
+    #   email:
+    #     recipients:
+    #       - you@example.com
