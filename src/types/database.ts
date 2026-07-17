@@ -19,6 +19,7 @@ export type Database = {
           preferred_locale: string;
           avatar_path: string | null;
           is_admin: boolean;
+          account_status: "active" | "suspended" | "banned";
           created_at: string;
           updated_at: string;
         };
@@ -292,15 +293,17 @@ export type Database = {
           preferred_contact_method: string;
           internal_metadata: Json;
           status: "open" | "waiting_for_customer" | "in_progress" | "resolved" | "closed";
+          assigned_to: string | null;
           created_at: string;
           updated_at: string;
         };
         Insert: Omit<
           Database["public"]["Tables"]["support_tickets"]["Row"],
-          "id" | "created_at" | "updated_at" | "status"
+          "id" | "created_at" | "updated_at" | "status" | "assigned_to"
         > & {
           id?: string;
           status?: Database["public"]["Tables"]["support_tickets"]["Row"]["status"];
+          assigned_to?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -336,8 +339,209 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["device_sessions"]["Row"]>;
         Relationships: [];
       };
+      suppliers: {
+        Row: {
+          id: string;
+          code: string;
+          name: string;
+          priority: number;
+          is_active: boolean;
+          adapter_code: string;
+          metadata: Json;
+          credentials_secret_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["suppliers"]["Row"]> & {
+          code: string;
+          name: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["suppliers"]["Row"]>;
+        Relationships: [];
+      };
+      supplier_products: {
+        Row: {
+          id: string;
+          supplier_id: string;
+          supplier_product_id: string;
+          supplier_sku: string | null;
+          supplier_cost: number | null;
+          currency: string;
+          country: string | null;
+          is_active: boolean;
+          metadata: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["supplier_products"]["Row"]> & {
+          supplier_id: string;
+          supplier_product_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["supplier_products"]["Row"]>;
+        Relationships: [];
+      };
+      supplier_product_mappings: {
+        Row: {
+          id: string;
+          product_id: string;
+          sku: string;
+          supplier_id: string;
+          supplier_product_ref: string;
+          supplier_product_row_id: string | null;
+          supplier_sku: string | null;
+          supplier_cost: number | null;
+          currency: string;
+          country: string | null;
+          priority: number;
+          is_active: boolean;
+          metadata: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["supplier_product_mappings"]["Row"]> & {
+          product_id: string;
+          sku: string;
+          supplier_id: string;
+          supplier_product_ref: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["supplier_product_mappings"]["Row"]>;
+        Relationships: [];
+      };
+      fulfillment_attempts: {
+        Row: {
+          id: string;
+          order_id: string;
+          order_item_id: string;
+          status: Database["public"]["Enums"]["fulfillment_status"];
+          provider: string;
+          provider_ref: string | null;
+          error_message: string | null;
+          supplier_id: string | null;
+          supplier_product_ref: string | null;
+          attempt_number: number;
+          request_id: string | null;
+          safe_request: Json;
+          safe_response: Json;
+          error_code: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["fulfillment_attempts"]["Row"]> & {
+          order_id: string;
+          order_item_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["fulfillment_attempts"]["Row"]>;
+        Relationships: [];
+      };
+      supplier_webhook_events: {
+        Row: {
+          id: string;
+          supplier_id: string | null;
+          event_type: string;
+          provider_event_id: string | null;
+          payload: Json;
+          status: "received" | "processing" | "processed" | "ignored" | "failed";
+          error_message: string | null;
+          processed_at: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["supplier_webhook_events"]["Row"]> & {
+          event_type: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["supplier_webhook_events"]["Row"]>;
+        Relationships: [];
+      };
+      app_settings: {
+        Row: {
+          key: string;
+          value: Json;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: Database["public"]["Tables"]["app_settings"]["Row"];
+        Update: Partial<Database["public"]["Tables"]["app_settings"]["Row"]>;
+        Relationships: [];
+      };
+      admin_roles: {
+        Row: {
+          id: string;
+          name_en: string;
+          name_ar: string;
+          description: string | null;
+          created_at: string;
+        };
+        Insert: Database["public"]["Tables"]["admin_roles"]["Row"];
+        Update: Partial<Database["public"]["Tables"]["admin_roles"]["Row"]>;
+        Relationships: [];
+      };
+      admin_role_permissions: {
+        Row: { role_id: string; permission: string };
+        Insert: Database["public"]["Tables"]["admin_role_permissions"]["Row"];
+        Update: Partial<Database["public"]["Tables"]["admin_role_permissions"]["Row"]>;
+        Relationships: [];
+      };
+      admin_user_roles: {
+        Row: { user_id: string; role_id: string; created_at: string };
+        Insert: Partial<Database["public"]["Tables"]["admin_user_roles"]["Row"]> & {
+          user_id: string;
+          role_id: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["admin_user_roles"]["Row"]>;
+        Relationships: [];
+      };
+      support_ticket_messages: {
+        Row: {
+          id: string;
+          ticket_id: string;
+          author_id: string | null;
+          author_role: "customer" | "admin" | "system";
+          body: string;
+          attachment_path: string | null;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["support_ticket_messages"]["Row"]> & {
+          ticket_id: string;
+          body: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["support_ticket_messages"]["Row"]>;
+        Relationships: [];
+      };
+      audit_logs: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          action: string;
+          entity_type: string;
+          entity_id: string | null;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["audit_logs"]["Row"]> & {
+          action: string;
+          entity_type: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["audit_logs"]["Row"]>;
+        Relationships: [];
+      };
     };
-    Views: Record<string, never>;
+    Views: {
+      admin_product_variants: {
+        Row: {
+          sku: string;
+          product_id: string;
+          product_kind: "gift_card" | "direct_topup";
+          variant_kind: string;
+          label_en: string;
+          label_ar: string;
+          amount: number;
+          price: number;
+          in_stock: boolean;
+          is_active: boolean;
+          sort_order: number;
+        };
+        Relationships: [];
+      };
+    };
     Functions: Record<string, never>;
     CompositeTypes: Record<string, never>;
     Enums: {

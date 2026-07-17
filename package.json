@@ -18,6 +18,9 @@
     "cap:sync": "npm run build && npm run prepare:capacitor && npx cap sync",
     "cap:sync:android": "npm run build && npm run prepare:capacitor && npx cap sync android",
     "cap:sync:ios": "npm run build && npm run prepare:capacitor && npx cap sync ios",
+    "admin:dev": "npm --prefix admin run dev",
+    "admin:build": "npm --prefix admin run build",
+    "admin:typecheck": "npm --prefix admin run typecheck",
     "format": "prettier --write ."
   },
   "dependencies": {

@@ -1,0 +1,26 @@
+{
+  "name": "netro-admin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5174",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit --pretty false",
+    "preview": "vite preview --port 5174"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.7",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.6.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.1",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5.9.2",
+    "vite": "^6.3.5"
+  }
+}

@@ -50,13 +50,28 @@ Deno.serve(async (req) => {
     .eq("id", orderId);
 
   const { data: items } = await admin.from("order_items").select("*").eq("order_id", orderId);
+  let attemptNumber = 1;
   for (const item of items ?? []) {
+    const requestId = crypto.randomUUID();
+    const providerRef = `stub_ff_${crypto.randomUUID()}`;
     await admin.from("fulfillment_attempts").insert({
       order_id: orderId,
       order_item_id: item.id,
       status: "processing",
       provider: "stub",
-      provider_ref: `stub_ff_${crypto.randomUUID()}`,
+      provider_ref: providerRef,
+      supplier_product_ref: item.sku,
+      attempt_number: attemptNumber++,
+      request_id: requestId,
+      safe_request: {
+        orderId,
+        orderItemId: item.id,
+        productId: item.product_id,
+        sku: item.sku,
+        quantity: item.quantity,
+      },
+      safe_response: { stub: true, providerRef },
+      updated_at: new Date().toISOString(),
     });
 
     if (item.kind === "gift_card") {

@@ -15,15 +15,17 @@ NETRO’s commerce and auth layer runs on **Supabase** (Auth, Postgres + RLS, St
 2. Enable **Phone** and **Email** auth providers. Configure SMS (Twilio, MessageBird, etc.) for phone OTP.
 3. Apply SQL migrations from `supabase/migrations/`.
 4. Enable **Realtime** on `notifications` (optional: `orders`).
-5. Confirm Storage buckets `avatars` and `support-attachments` (created by migration).
-6. Deploy Edge Functions under `supabase/functions/`.
+5. Confirm Storage buckets `avatars`, `support-attachments`, and `catalog-images` (created by migrations).
+6. Deploy Edge Functions under `supabase/functions/` (include `admin-api`, `supplier-webhook`).
 7. Set function secrets (Dashboard → Edge Functions → Secrets):
    - `SUPABASE_SERVICE_ROLE_KEY` (auto in hosted projects)
    - `PAYMENT_STUB_ENABLED=true` only in non-prod
    - `FULFILLMENT_STUB_ENABLED=true` only in non-prod
+   - `ALLOWED_ORIGINS` including Admin origin
    - Future: `MOYASAR_*`, supplier keys — never in frontend env
-8. Seed or extend catalog as needed (migration includes sample products).
-9. Production must **refuse** stub payment initiate when `PAYMENT_STUB_ENABLED` is not true.
+8. Bootstrap first admin: `update profiles set is_admin = true where email = '…'`
+9. Seed or extend catalog as needed (migration includes sample products).
+10. Production must **refuse** stub payment initiate when `PAYMENT_STUB_ENABLED` is not true.
 
 ## Local frontend env
 
@@ -64,18 +66,23 @@ npx supabase gen types typescript --linked > src/types/database.ts
 | `reauth` | Short-lived reauth token |
 | `verify-account` | Top-up account lookup stub |
 | `delete-account` | Privileged account deletion |
-| `admin-order-action` | Admin + audit |
+| `admin-order-action` | Legacy thin admin cancel / manual_review |
+| `admin-api` | Full Admin SPA API (RBAC + catalog/suppliers/orders/users/support/settings/audit) |
+| `supplier-webhook` | Generic supplier webhook inbox (`supplier_webhook_events`) |
 | `poll-fulfillment` | Server fulfillment status |
+
+See also [ADMIN.md](./ADMIN.md) for the separate Admin SPA.
 
 ## Edge Function secrets
 
 | Secret | Purpose |
 |--------|---------|
-| `ALLOWED_ORIGINS` | Comma-separated app origins for CORS (recommended) |
+| `ALLOWED_ORIGINS` | Comma-separated app origins for CORS (include Admin `http://localhost:5174`) |
 | `COMMERCE_CHECKOUT_ENABLED` | Must be `true` to allow `create-order` (keep unset until PSP is live) |
 | `PAYMENT_STUB_ENABLED` | Non-prod only; service-role stub payment webhook |
 | `FULFILLMENT_STUB_ENABLED` | Non-prod only; service-role fulfillment stub |
-| Future `MOYASAR_*` / supplier keys | Never in `VITE_*` |
+| `SUPPLIER_WEBHOOK_SHARED_SECRET` | Optional shared secret for `supplier-webhook` |
+| Future `MOYASAR_*` / supplier keys | Never in `VITE_*`; reference via `suppliers.credentials_secret_id` |
 
 Purchasing is **disabled by default** in the frontend capability config until payment integration ships.
 

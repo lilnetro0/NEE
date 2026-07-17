@@ -104,6 +104,8 @@ NETRO Product (public)
 
 A single NETRO denomination or top-up package may map to multiple supplier SKUs for failover and cost optimization.
 
+**Implemented now:** sellable SKUs remain `denominations` / `topup_packages` (no unified `product_variants` table). Admin SPA + Edge `admin-api` manage mappings; placeholder adapters live under `supabase/functions/_shared/suppliers/`. See [ADMIN.md](./ADMIN.md).
+
 ## 5. Distributor / supplier domain (backend-only)
 
 These models live in the NETRO backend (and admin tooling). They must **not** appear in customer UI, analytics payloads, or public API responses.
