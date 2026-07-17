@@ -21,6 +21,13 @@ dist-ssr
 .env.*
 !.env.example
 
+# Apple / Android signing materials (upload to Codemagic UI only)
+*.p12
+*.mobileprovision
+*.jks
+*.keystore
+!**/debug.keystore
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars

@@ -1,14 +1,15 @@
 # Codemagic CI/CD for NETRO (Capacitor 8 + SPM)
 # https://docs.codemagic.io/yaml-quick-start/building-an-ionic-app/
 #
-# Capacitor 8 iOS uses App.xcodeproj (Swift Package Manager), not CocoaPods
-# App.xcworkspace.
+# Capacitor 8 iOS uses App.xcodeproj (Swift Package Manager).
 #
-# ios-workflow builds for the iOS Simulator (no Apple provisioning profile).
-# When you are ready for TestFlight/App Store:
-#   1. Codemagic → Teams → Code signing identities (upload cert + profiles)
-#   2. Uncomment ios_signing + switch the build step to xcode-project build-ipa
-#      (see ios-release-workflow below)
+# Code signing (required for IPA):
+#   1. Codemagic → Teams → Code signing identities
+#      - Upload certificate: netro.p12 (enter the .p12 password)
+#      - Upload profile:     Nexu.mobileprovision
+#   2. Run workflow "NETRO iOS Release"
+#
+# Bundle ID: com.lilnetro0.nexus
 
 workflows:
   ios-workflow:
@@ -46,7 +47,6 @@ workflows:
       - name: Build iOS (Simulator, no signing)
         script: |
           cd "$CM_BUILD_DIR/ios/App"
-          # No provisioning profile required — verifies the Xcode project compiles.
           xcodebuild \
             -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME" \
@@ -60,42 +60,50 @@ workflows:
     artifacts:
       - /tmp/xcodebuild_logs/*.log
 
-  # Signed App Store / TestFlight IPA — enable after uploading certs + profiles
-  # in Codemagic code signing settings.
-  # ios-release-workflow:
-  #   name: NETRO iOS Release
-  #   max_build_duration: 120
-  #   instance_type: mac_mini_m2
-  #   integrations:
-  #     app_store_connect: YOUR_ASC_KEY_NAME
-  #   environment:
-  #     ios_signing:
-  #       distribution_type: app_store
-  #       bundle_identifier: com.lilnetro0.nexus
-  #     vars:
-  #       XCODE_PROJECT: "App.xcodeproj"
-  #       XCODE_SCHEME: "App"
-  #     node: 22
-  #     xcode: latest
-  #   scripts:
-  #     - name: Install npm dependencies
-  #       script: npm ci || npm install
-  #     - name: Build web assets for Capacitor
-  #       script: |
-  #         export VITE_APP_ENV=production
-  #         export VITE_USE_MOCKS=false
-  #         export VITE_API_BASE_URL="$VITE_API_BASE_URL"
-  #         npm run build && npm run prepare:capacitor
-  #     - name: Sync iOS
-  #       script: npx cap sync ios
-  #     - name: Set up code signing
-  #       script: xcode-project use-profiles
-  #     - name: Build IPA
-  #       script: |
-  #         cd "$CM_BUILD_DIR/ios/App"
-  #         xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME"
-  #   artifacts:
-  #     - ios/App/build/ios/ipa/*.ipa
+  ios-release-workflow:
+    name: NETRO iOS Release
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.lilnetro0.nexus
+      vars:
+        XCODE_PROJECT: "App.xcodeproj"
+        XCODE_SCHEME: "App"
+        CM_CLONE_DEPTH: 1
+      node: 22
+      xcode: latest
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm ci || npm install
+      - name: Build web assets for Capacitor
+        script: |
+          export VITE_APP_ENV="${VITE_APP_ENV:-production}"
+          export VITE_USE_MOCKS="${VITE_USE_MOCKS:-false}"
+          export VITE_API_BASE_URL="${VITE_API_BASE_URL:-https://api.example.netro.app}"
+          export VITE_ENABLE_DEV_TOOLS="false"
+          export VITE_APP_VERSION="${VITE_APP_VERSION:-1.0.0}"
+          export VITE_BUILD_SHA="${VITE_BUILD_SHA:-${CM_COMMIT}}"
+          npm run build
+          npm run prepare:capacitor
+      - name: Sync iOS
+        script: |
+          npx cap sync ios
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
+      - name: Build IPA
+        script: |
+          cd "$CM_BUILD_DIR/ios/App"
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - ios/App/build/ios/ipa/*.ipa
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
 
   android-workflow:
     name: NETRO Android
