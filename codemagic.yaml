@@ -195,13 +195,24 @@ workflows:
         script: |
           set -euo pipefail
           xcode-project use-profiles
+      - name: Bump iOS build number
+        script: |
+          set -euo pipefail
+          cd "$CM_BUILD_DIR/ios/App"
+          # App Store Connect requires CFBundleVersion > last uploaded (currently 1).
+          # Prefer Codemagic's CM_BUILD_NUMBER; fall back to a monotonic timestamp.
+          BUILD_NUMBER="${CM_BUILD_NUMBER:-}"
+          if [ -z "${BUILD_NUMBER}" ] || ! [ "${BUILD_NUMBER}" -gt 1 ] 2>/dev/null; then
+            BUILD_NUMBER="$(date +%Y%m%d%H%M)"
+          fi
+          /usr/libexec/PlistBuddy -c "Print :CFBundleVersion" App/Info.plist || true
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = ${BUILD_NUMBER};/g" App.xcodeproj/project.pbxproj
+          grep -E 'CURRENT_PROJECT_VERSION' App.xcodeproj/project.pbxproj
+          echo "Using CFBundleVersion / CURRENT_PROJECT_VERSION=${BUILD_NUMBER}"
       - name: Build IPA
         script: |
           set -euo pipefail
           cd "$CM_BUILD_DIR/ios/App"
-          if [ -n "${CM_BUILD_NUMBER:-}" ]; then
-            xcrun agvtool new-version -all "$CM_BUILD_NUMBER" || true
-          fi
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME"
