@@ -467,12 +467,12 @@ create policy device_sessions_update_own on public.device_sessions for update us
 
 -- Quotes / orders: read own only (writes via service role)
 create policy quotes_select_own on public.checkout_quotes for select
-  using (user_id is null or auth.uid() = user_id);
+  using (auth.uid() = user_id);
 create policy quote_items_select on public.checkout_quote_items for select
   using (
     exists (
       select 1 from public.checkout_quotes q
-      where q.id = quote_id and (q.user_id is null or q.user_id = auth.uid())
+      where q.id = quote_id and q.user_id = auth.uid()
     )
   );
 

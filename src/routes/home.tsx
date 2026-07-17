@@ -34,7 +34,7 @@ function Home() {
   const gifts = isEnabled("giftCardPurchaseEnabled")
     ? products.filter((p) => p.kind === "gift_card").slice(0, 8)
     : [];
-  const firstName = user?.displayName.split(" ")[0] ?? "Ahmad";
+  const firstName = user?.displayName?.split(" ")[0] ?? t("welcome");
   const visibleCategories = categories.filter((c) => {
     if (c.id === "top-ups") return isEnabled("directGameTopUpEnabled");
     if (c.id === "gift-cards") return isEnabled("giftCardPurchaseEnabled");

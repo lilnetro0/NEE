@@ -120,9 +120,27 @@ export async function initObservability(): Promise<void> {
     registerSentryBridge(null);
     return;
   }
-  // Placeholder: wire @sentry/react when the dependency is added in a follow-up.
-  // Until then we keep a no-op bridge so production builds stay secret-free.
-  logger.info("Sentry DSN configured; install @sentry/react to enable reporting", {
-    release: `${env.appVersion}+${env.buildSha}`,
-  });
+  try {
+    const Sentry = await import("@sentry/react");
+    Sentry.init({
+      dsn: env.sentryDsn,
+      environment: env.appEnv,
+      release: `${env.appVersion}+${env.buildSha}`,
+      tracesSampleRate: env.appEnv === "production" ? 0.1 : 0,
+    });
+    registerSentryBridge({
+      captureException: (error, hint) => {
+        Sentry.captureException(error, { extra: hint?.extra });
+      },
+      captureMessage: (message, level) => {
+        Sentry.captureMessage(message, level as "error" | "warning" | "info" | undefined);
+      },
+    });
+    logger.info("Sentry initialized", { release: `${env.appVersion}+${env.buildSha}` });
+  } catch (error) {
+    registerSentryBridge(null);
+    logger.warn("Sentry failed to initialize", {
+      message: error instanceof Error ? error.message : "unknown",
+    });
+  }
 }

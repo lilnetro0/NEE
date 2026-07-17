@@ -17,6 +17,9 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (!existing) return jsonResponse({ error: "not_found" }, 404);
+  if (existing.user_id !== user.id) {
+    return jsonResponse({ error: "FORBIDDEN", message: "Quote does not belong to this user." }, 403);
+  }
 
   const items = (existing.checkout_quote_items ?? []).map((row: Record<string, unknown>) => ({
     productId: row.product_id,

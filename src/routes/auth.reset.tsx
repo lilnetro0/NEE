@@ -65,7 +65,7 @@ function Reset() {
           dir="ltr"
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-          placeholder="123456"
+          placeholder="000000"
         />
       </Field>
       <Field label={t("newPassword")}>

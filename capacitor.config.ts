@@ -15,7 +15,7 @@ const serverUrl = process.env.CAP_SERVER_URL?.trim();
 
 const config: CapacitorConfig = {
   appId: "com.lilnetro01.talal",
-  appName: "ME",
+  appName: "NETRO",
   webDir: ".output/public",
   ...(serverUrl
     ? {

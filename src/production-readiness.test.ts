@@ -67,7 +67,8 @@ describe("resolveCapabilities", () => {
         ],
       },
     );
-    expect(caps.purchasingEnabled).toBe(true);
+    expect(caps.purchasingEnabled).toBe(false);
+    expect(caps.externalPaymentsEnabled).toBe(false);
     expect(caps.walletFundingEnabled).toBe(false);
     expect(caps.referralsEnabled).toBe(true);
   });

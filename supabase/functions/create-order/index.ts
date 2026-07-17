@@ -5,6 +5,16 @@ Deno.serve(async (req) => {
   const { user, error: authError } = await requireUser(req);
   if (authError || !user) return jsonResponse({ error: authError ?? "UNAUTHORIZED" }, 401);
 
+  if (Deno.env.get("COMMERCE_CHECKOUT_ENABLED") !== "true") {
+    return jsonResponse(
+      {
+        error: "PURCHASING_DISABLED",
+        message: "Order creation is disabled until payment provider integration is enabled.",
+      },
+      403,
+    );
+  }
+
   const body = await req.json();
   const quoteId = String(body.quoteId ?? "");
   const paymentMethod = String(body.paymentMethod ?? "card");
@@ -17,6 +27,7 @@ Deno.serve(async (req) => {
     .from("idempotency_keys")
     .select("*")
     .eq("key", idempotencyKey)
+    .eq("user_id", user.id)
     .maybeSingle();
   if (existingKey?.response) {
     return jsonResponse(existingKey.response);
@@ -24,6 +35,9 @@ Deno.serve(async (req) => {
 
   const { data: quote } = await admin.from("checkout_quotes").select("*").eq("id", quoteId).maybeSingle();
   if (!quote) return jsonResponse({ error: "not_found" }, 404);
+  if (quote.user_id !== user.id) {
+    return jsonResponse({ error: "FORBIDDEN", message: "Quote does not belong to this user." }, 403);
+  }
   if (Date.parse(quote.expires_at) <= Date.now() || quote.availability_status !== "available") {
     return jsonResponse({ error: "quote_unavailable" }, 409);
   }

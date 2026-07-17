@@ -55,23 +55,36 @@ npx supabase gen types typescript --linked > src/types/database.ts
 
 | Function | Role |
 |----------|------|
-| `create-quote` / `refresh-quote` | Server pricing + quote rows |
-| `create-order` | Idempotent order from quote (`pending_payment`) |
+| `create-quote` / `refresh-quote` | Server pricing + quote rows (ownership enforced) |
+| `create-order` | Idempotent order from quote; gated by `COMMERCE_CHECKOUT_ENABLED` |
 | `payment-stub-initiate` | Explicit non-prod payment stub |
-| `payment-webhook` | Moyasar skeleton; only path to `paid` |
-| `fulfillment-stub` | Explicit stub after paid; restricted codes |
-| `reveal-code` | Reauth + ownership + audit; returns code once |
+| `payment-webhook` | Moyasar skeleton; only verified path to `paid` |
+| `fulfillment-stub` | Non-prod service-role stub only |
+| `reveal-code` | Server reauth required; returns code once |
 | `reauth` | Short-lived reauth token |
 | `verify-account` | Top-up account lookup stub |
 | `delete-account` | Privileged account deletion |
 | `admin-order-action` | Admin + audit |
+| `poll-fulfillment` | Server fulfillment status |
+
+## Edge Function secrets
+
+| Secret | Purpose |
+|--------|---------|
+| `ALLOWED_ORIGINS` | Comma-separated app origins for CORS (recommended) |
+| `COMMERCE_CHECKOUT_ENABLED` | Must be `true` to allow `create-order` (keep unset until PSP is live) |
+| `PAYMENT_STUB_ENABLED` | Non-prod only; service-role stub payment webhook |
+| `FULFILLMENT_STUB_ENABLED` | Non-prod only; service-role fulfillment stub |
+| Future `MOYASAR_*` / supplier keys | Never in `VITE_*` |
+
+Purchasing is **disabled by default** in the frontend capability config until payment integration ships.
 
 Deploy:
 
 ```bash
-npx supabase functions deploy create-quote
-# …repeat for each function, or deploy all
+npx supabase functions deploy
 ```
+
 
 ## Migrate from Laravel
 

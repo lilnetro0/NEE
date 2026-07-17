@@ -24,14 +24,23 @@ import {
 import { MobileScreen, TopBar, ScreenBody, BottomNav } from "@/components/shell/Shell";
 import { useCurrentUser } from "@/data-access";
 import { useAuth } from "@/auth/AuthProvider";
+import { RequireAuth } from "@/auth/RequireAuth";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useCapabilities } from "@/platform/useCapabilities";
 import { isDevToolsEnabled } from "@/config/env";
 import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/account")({
-  component: Account,
+  component: AccountRoute,
 });
+
+function AccountRoute() {
+  return (
+    <RequireAuth>
+      <Account />
+    </RequireAuth>
+  );
+}
 
 function Account() {
   const { t, locale, dir } = useI18n();
@@ -39,9 +48,9 @@ function Account() {
   const { isEnabled } = useCapabilities();
   const auth = useAuth();
   const nav = useNavigate();
-  const displayName = auth.user?.displayName ?? user?.displayName ?? "Ahmad Al-Sayed";
-  const email = auth.user?.email ?? user?.email ?? "ahmad@example.com";
-  const initial = displayName.slice(0, 1).toUpperCase();
+  const displayName = auth.user?.displayName ?? user?.displayName ?? "";
+  const email = auth.user?.email ?? user?.email ?? "";
+  const initial = (displayName || email || "?").slice(0, 1).toUpperCase();
   const moneyItems: { icon: typeof User; label: string; to: string; sub?: string }[] = [];
   if (isEnabled("storeCreditEnabled")) {
     moneyItems.push({

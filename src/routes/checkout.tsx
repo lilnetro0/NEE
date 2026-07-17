@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   Mail,
@@ -28,10 +28,21 @@ import { useCapabilities } from "@/platform/useCapabilities";
 import { CapabilityDisabledPanel, CapabilityDisabledScreen } from "@/platform/CapabilityDisabled";
 import { Bidi } from "@/components/common/Bidi";
 import { DEFAULT_MARKET_COUNTRY } from "@/platform/capabilities";
+import { useAuth } from "@/auth/AuthProvider";
+import { RequireAuth } from "@/auth/RequireAuth";
+import { logger } from "@/lib/logger";
 
 export const Route = createFileRoute("/checkout")({
-  component: Checkout,
+  component: CheckoutRoute,
 });
+
+function CheckoutRoute() {
+  return (
+    <RequireAuth>
+      <Checkout />
+    </RequireAuth>
+  );
+}
 
 type Method = "mada" | "visa" | "applepay" | "stcpay" | "credit";
 
@@ -39,23 +50,21 @@ type QuoteUiStatus =
   "idle" | "loading" | "ready" | "expired" | "price_changed" | "product_unavailable" | "error";
 
 /**
- * Checkout is quote-driven:
- *   validating_order → awaiting_payment → payment_processing
- *         → payment_confirmed → (navigate fulfillment; never “order completed”)
- *
- * The payable total always comes from CheckoutQuote — never from cart math.
- * Payment requires a fresh, non-expired, available quote. No real payment runs.
+ * Checkout is quote-driven.
+ * Payment provider integration is postponed: never simulate paid/fulfilled states.
+ * When purchasing is enabled later, submit must initiate a real payment session
+ * and wait for a verified webhook — never client-side "payment_confirmed".
  */
 function Checkout() {
   const { t, locale, formatPrice } = useI18n();
   const isAr = locale === "ar";
-  const { items, clear } = useStore();
-  const nav = useNavigate();
-  const { createQuote, refreshQuote: refreshQuoteRepo, create } = useOrderMutations();
+  const { items } = useStore();
+  const { createQuote, refreshQuote: refreshQuoteRepo } = useOrderMutations();
   const { capabilities, paymentRails, isEnabled } = useCapabilities();
+  const auth = useAuth();
 
-  const [email, setEmail] = useState("ahmad@example.com");
-  const [phone, setPhone] = useState("+9665");
+  const [email, setEmail] = useState(auth.user?.email ?? "");
+  const [phone, setPhone] = useState(auth.user?.phone ?? "");
   const [method, setMethod] = useState<Method>("mada");
   const [promoInput, setPromoInput] = useState("");
   const [appliedPromo, setAppliedPromo] = useState<string | undefined>();
@@ -65,6 +74,11 @@ function Checkout() {
   const [quoteUi, setQuoteUi] = useState<QuoteUiStatus>("idle");
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    if (auth.user?.email) setEmail(auth.user.email);
+    if (auth.user?.phone) setPhone(auth.user.phone);
+  }, [auth.user?.email, auth.user?.phone]);
 
   const methods: {
     id: Method;
@@ -77,7 +91,6 @@ function Checkout() {
       id: "mada",
       label: "Mada",
       icon: CreditCard,
-      sub: "•• 4421",
       enabled: paymentRails.madaEnabled,
     },
     {
@@ -102,8 +115,7 @@ function Checkout() {
       id: "credit",
       label: isAr ? "رصيد متجر NETRO" : "NETRO Store Credit",
       icon: Wallet,
-      sub: formatPrice(42.5, "SAR"),
-      enabled: capabilities.storeCreditEnabled,
+      enabled: capabilities.storeCreditEnabled && capabilities.purchasingEnabled,
     },
   ];
 
@@ -282,43 +294,30 @@ function Checkout() {
   };
 
   const submit = async () => {
+    // Payment provider is not wired. Never fake authorization, never create
+    // an order that appears paid, never navigate to fulfillment as success.
+    if (!isEnabled("purchasingEnabled") || !isEnabled("externalPaymentsEnabled")) {
+      toast.error(
+        isAr
+          ? "الشراء غير متاح حتى اكتمال دمج بوابة الدفع"
+          : "Purchasing is unavailable until payment integration is complete",
+      );
+      return;
+    }
     if (!quotePayable || !quote || enabledMethods.length === 0) {
       if (expired) {
         toast.error(isAr ? "انتهت صلاحية العرض — حدّث أولاً" : "Quote expired — refresh first");
       }
       return;
     }
-    setState("payment_processing");
-    try {
-      // Mock authorization only — no real payment provider is contacted.
-      await new Promise((r) => setTimeout(r, 700));
-      setState("payment_confirmed");
-      await new Promise((r) => setTimeout(r, 300));
-
-      const created = await create({ quoteId: quote.id, paymentMethod: method });
-      if (!created.ok) {
-        if (created.error.code === "conflict" || created.error.message.includes("expired")) {
-          setQuoteUi("expired");
-          toast.error(isAr ? "انتهت صلاحية العرض" : "Quote expired");
-          setState("awaiting_payment");
-          return;
-        }
-        if (created.error.code === "unavailable") {
-          setQuoteUi("product_unavailable");
-          setState("validating_order");
-          return;
-        }
-        throw new Error(created.error.message);
-      }
-      setState("payment_confirmed");
-      clear();
-      nav({ to: "/order/$id/fulfillment", params: { id: created.data.id } });
-    } catch (e) {
-      console.error(e);
-      setState("awaiting_payment");
-      toast.error(isAr ? "فشل الدفع" : "Payment failed");
-      nav({ to: "/order/$id/failed", params: { id: "NTR-fail" } });
-    }
+    toast.error(
+      isAr
+        ? "بوابة الدفع غير مفعّلة بعد"
+        : "Payment provider is not configured yet",
+    );
+    logger.warn("Checkout submit blocked: payment provider not integrated", {
+      quoteId: quote.id,
+    });
   };
 
   const busy =

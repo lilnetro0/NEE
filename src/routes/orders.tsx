@@ -7,9 +7,11 @@ import { localizedOrderStatus, toOrderListBucket } from "@/domain/order";
 import { useOrders } from "@/data-access";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
+import { RequireAuth } from "@/auth/RequireAuth";
+import { AsyncState } from "@/components/common/AsyncState";
 
 export const Route = createFileRoute("/orders")({
-  component: Orders,
+  component: OrdersRoute,
 });
 
 const filters: (OrderListBucket | "all")[] = [
@@ -29,77 +31,88 @@ function statusColor(bucket: OrderListBucket) {
   return "bg-muted text-muted-foreground";
 }
 
+function OrdersRoute() {
+  return (
+    <RequireAuth>
+      <Orders />
+    </RequireAuth>
+  );
+}
+
 function Orders() {
   const { t, locale, formatPrice } = useI18n();
   const [f, setF] = useState<OrderListBucket | "all">("all");
-  const { data: orders = [] } = useOrders(f === "all" ? undefined : f);
+  const { status, data: orders = [], error, reload } = useOrders(
+    f === "all" ? undefined : f,
+  );
   const list = orders;
 
   return (
     <MobileScreen>
       <TopBar title={t("nav_orders")} />
-      <ScreenBody>
-        <div className="no-scrollbar mb-4 -mx-4 flex gap-2 overflow-x-auto px-4">
-          {filters.map((k) => (
+      <ScreenBody className="pb-24">
+        <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+          {filters.map((id) => (
             <button
-              key={k}
+              key={id}
               type="button"
-              onClick={() => setF(k)}
+              onClick={() => setF(id)}
               className={cn(
-                "shrink-0 rounded-full px-4 py-2 text-xs font-semibold",
-                f === k ? "bg-brand text-brand-foreground" : "bg-surface text-muted-foreground",
+                "shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold",
+                f === id ? "gradient-brand text-brand-foreground" : "bg-secondary text-foreground",
               )}
             >
-              {t(k as never)}
+              {id === "all" ? t("all") : t(id)}
             </button>
           ))}
         </div>
 
-        {list.length === 0 ? (
-          <div className="mt-20 text-center">
-            <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-surface">
-              <Package className="h-7 w-7 text-muted-foreground" />
+        <AsyncState
+          status={status === "ready" && list.length === 0 ? "empty" : status}
+          data={list}
+          error={error?.message ?? null}
+          onRetry={reload}
+          emptyLabel={t("empty_orders")}
+          emptyIcon={<Package className="h-8 w-8" aria-hidden />}
+        >
+          {(items) => (
+            <div className="space-y-3">
+              {items.map((order) => {
+                const bucket = toOrderListBucket(order.displayStatus);
+                return (
+                  <Link
+                    key={order.id}
+                    to="/order/$id"
+                    params={{ id: order.id }}
+                    className="block rounded-2xl border border-border/60 bg-card p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold" dir="ltr">
+                          {order.id.slice(0, 8)}…
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {new Date(order.createdAt).toLocaleString(locale === "ar" ? "ar" : "en")}
+                        </p>
+                      </div>
+                      <span
+                        className={cn(
+                          "rounded-full px-2.5 py-1 text-[10px] font-bold uppercase",
+                          statusColor(bucket),
+                        )}
+                      >
+                        {localizedOrderStatus(order.displayStatus, locale)}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm font-semibold" dir="ltr">
+                      {formatPrice(order.total, order.paymentCurrency)}
+                    </p>
+                  </Link>
+                );
+              })}
             </div>
-            <p className="mt-4 text-sm text-muted-foreground">{t("empty_orders")}</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {list.map((o) => {
-              const bucket = toOrderListBucket(o.displayStatus);
-              return (
-                <Link
-                  key={o.id}
-                  to="/order/$id"
-                  params={{ id: o.id }}
-                  className="block rounded-2xl border border-border bg-card p-4"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-xs text-muted-foreground">{o.id}</span>
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
-                        statusColor(bucket),
-                      )}
-                    >
-                      {localizedOrderStatus(o.displayStatus, locale)}
-                    </span>
-                  </div>
-                  <div className="mt-2 font-semibold">{o.items[0]?.title[locale]}</div>
-                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>
-                      {new Date(o.createdAt).toLocaleDateString(
-                        locale === "ar" ? "ar-SA" : "en-US",
-                      )}
-                    </span>
-                    <span className="font-bold text-brand">
-                      {formatPrice(o.total, o.paymentCurrency)}
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
+          )}
+        </AsyncState>
       </ScreenBody>
       <BottomNav />
     </MobileScreen>

@@ -46,18 +46,48 @@ Deno.serve(async (req) => {
       .from("denominations")
       .select("*")
       .eq("id", sku)
+      .eq("product_id", productId)
       .maybeSingle();
     const { data: pkg } = await admin
       .from("topup_packages")
       .select("*")
       .eq("id", sku)
+      .eq("product_id", productId)
       .maybeSingle();
-    if (den) {
+    if (product.kind === "gift_card") {
+      if (!den) {
+        availability = "product_unavailable";
+        warnings.push({
+          kind: "product_unavailable",
+          productId,
+          message: { en: "Invalid denomination for product", ar: "فئة غير صالحة للمنتج" },
+        });
+        continue;
+      }
+      unitPrice = Number(den.price);
+      available = den.in_stock;
+    } else if (product.kind === "direct_topup") {
+      if (!pkg) {
+        availability = "product_unavailable";
+        warnings.push({
+          kind: "product_unavailable",
+          productId,
+          message: { en: "Invalid package for product", ar: "باقة غير صالحة للمنتج" },
+        });
+        continue;
+      }
+      unitPrice = Number(pkg.price);
+      available = pkg.in_stock;
+    } else if (den) {
       unitPrice = Number(den.price);
       available = den.in_stock;
     } else if (pkg) {
       unitPrice = Number(pkg.price);
       available = pkg.in_stock;
+    }
+
+    if (!Number.isFinite(quantity) || quantity < 1 || quantity > 20) {
+      return jsonResponse({ error: "VALIDATION", message: "Invalid quantity" }, 400);
     }
 
     if (simulate === "price_changed" && clientUnitPrice != null) {

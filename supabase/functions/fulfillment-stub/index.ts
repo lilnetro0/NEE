@@ -1,22 +1,41 @@
 /**
  * EXPLICIT FULFILLMENT STUB — NOT PRODUCTION.
- * Runs only after payment_status = paid.
- * Writes codes into digital_codes (ciphertext). Never returns codes to the client.
+ * Requires FULFILLMENT_STUB_ENABLED=true AND service-role Authorization.
+ * Never trusts a client JSON "internal" flag. Never returns codes to the client.
  */
 import { corsHeaders, createServiceClient, jsonResponse, writeAudit } from "../_shared/cors.ts";
+
+function isServiceRoleRequest(req: Request): boolean {
+  const auth = req.headers.get("Authorization") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  return Boolean(serviceKey) && auth === `Bearer ${serviceKey}`;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const body = await req.json();
-  const orderId = String(body.orderId ?? "");
-  const internal = body.internal === true;
-  if (!orderId) return jsonResponse({ error: "VALIDATION" }, 400);
-
-  // Internal calls use service role; external must be disabled unless stub enabled.
-  if (!internal && Deno.env.get("FULFILLMENT_STUB_ENABLED") !== "true") {
-    return jsonResponse({ error: "FULFILLMENT_STUB_DISABLED" }, 403);
+  if (Deno.env.get("FULFILLMENT_STUB_ENABLED") !== "true") {
+    return jsonResponse(
+      {
+        error: "FULFILLMENT_STUB_DISABLED",
+        message: "Fulfillment stub is disabled. Wire a real supplier adapter for production.",
+      },
+      403,
+    );
   }
+  if (!isServiceRoleRequest(req)) {
+    return jsonResponse({ error: "FORBIDDEN", message: "Fulfillment stub requires service role." }, 403);
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return jsonResponse({ error: "INVALID_JSON" }, 400);
+  }
+
+  const orderId = String(body.orderId ?? "");
+  if (!orderId) return jsonResponse({ error: "VALIDATION" }, 400);
 
   const admin = createServiceClient();
   const { data: order } = await admin.from("orders").select("*").eq("id", orderId).maybeSingle();
@@ -42,7 +61,7 @@ Deno.serve(async (req) => {
 
     if (item.kind === "gift_card") {
       const fakeCode = `STUB-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
-      // Store as opaque ciphertext placeholder (real impl encrypts with KMS).
+      // Placeholder opaque storage — replace with KMS envelope encryption before production inventory.
       await admin.from("digital_codes").insert({
         order_item_id: item.id,
         code_ciphertext: btoa(fakeCode),

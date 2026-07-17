@@ -1,21 +1,43 @@
 /**
  * Payment webhook skeleton (Moyasar-ready).
- * ONLY this path (or a verified provider callback) may set payment_status = paid.
- * Idempotent via payment event + idempotency_keys.
+ * ONLY a verified provider callback may set payment_status = paid in production.
+ * Stub simulation requires PAYMENT_STUB_ENABLED and service-role Authorization.
  */
 import { corsHeaders, createServiceClient, jsonResponse, writeAudit } from "../_shared/cors.ts";
+
+function isServiceRoleRequest(req: Request): boolean {
+  const auth = req.headers.get("Authorization") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  return Boolean(serviceKey) && auth === `Bearer ${serviceKey}`;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const body = await req.json();
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return jsonResponse({ error: "INVALID_JSON" }, 400);
+  }
+
   const admin = createServiceClient();
 
-  // Stub simulate path — requires PAYMENT_STUB_ENABLED and explicit flag.
+  // Stub simulate path — non-production only, service-role callers only.
   if (body.stubSimulatePaid === true) {
     if (Deno.env.get("PAYMENT_STUB_ENABLED") !== "true") {
-      return jsonResponse({ error: "PAYMENT_STUB_DISABLED" }, 403);
+      return jsonResponse(
+        {
+          error: "PAYMENT_STUB_DISABLED",
+          message: "Payment stub is disabled. Use a verified provider webhook in production.",
+        },
+        403,
+      );
     }
+    if (!isServiceRoleRequest(req)) {
+      return jsonResponse({ error: "FORBIDDEN", message: "Stub payment requires service role." }, 403);
+    }
+
     const orderId = String(body.orderId ?? "");
     const idempotencyKey = `stub-paid:${orderId}`;
     const { data: existing } = await admin
@@ -45,16 +67,17 @@ Deno.serve(async (req) => {
       actor: "payment-webhook-stub",
     });
 
-    // Trigger fulfillment stub asynchronously (inline for now)
-    await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/fulfillment-stub`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-        apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ orderId, internal: true }),
-    });
+    if (Deno.env.get("FULFILLMENT_STUB_ENABLED") === "true") {
+      await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/fulfillment-stub`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ orderId }),
+      });
+    }
 
     const response = { ok: true, orderId, payment_status: "paid", stub: true };
     await admin.from("idempotency_keys").insert({
@@ -69,16 +92,12 @@ Deno.serve(async (req) => {
   }
 
   // Moyasar (or other) verified webhook — implement signature verification here.
-  const providerEventId = String(body.id ?? body.event_id ?? "");
-  if (!providerEventId) {
-    return jsonResponse({
+  return jsonResponse(
+    {
       error: "NOT_IMPLEMENTED",
-      message: "Moyasar webhook verification not wired yet. Rejecting unverified events.",
-    }, 501);
-  }
-
-  return jsonResponse({
-    error: "NOT_IMPLEMENTED",
-    message: "Verify Moyasar signature, then transition order to paid and enqueue fulfillment.",
-  }, 501);
+      message:
+        "Provider webhook verification is not wired yet. Rejecting unverified payment events.",
+    },
+    501,
+  );
 });

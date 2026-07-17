@@ -10,15 +10,15 @@ const COPY: Record<
   purchasingEnabled: {
     title: { en: "Purchasing unavailable", ar: "الشراء غير متاح" },
     message: {
-      en: "Purchases are temporarily unavailable in your market or on this platform.",
-      ar: "الشراء غير متاح مؤقتاً في سوقك أو على هذه المنصة.",
+      en: "Checkout is temporarily unavailable while payment integration is completed. You can still browse the catalog, manage your account, and use support.",
+      ar: "إتمام الشراء غير متاح مؤقتاً حتى اكتمال دمج بوابة الدفع. يمكنك تصفح المنتجات وإدارة حسابك واستخدام الدعم.",
     },
   },
   externalPaymentsEnabled: {
     title: { en: "External payments unavailable", ar: "الدفع الخارجي غير متاح" },
     message: {
-      en: "Card and wallet payment methods are not available right now.",
-      ar: "طرق الدفع بالبطاقات والمحافظ غير متاحة حالياً.",
+      en: "Card and wallet payments will be available after payment provider integration.",
+      ar: "الدفع بالبطاقات والمحافظ سيتاح بعد ربط مزود الدفع.",
     },
   },
   giftCardPurchaseEnabled: {

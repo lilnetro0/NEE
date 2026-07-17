@@ -50,22 +50,22 @@ export type CapabilityConfig = {
   rules: readonly CapabilityRule[];
 };
 
-/** Development defaults. Wallet funding stays off — no deposits/withdrawals. */
+/** Production defaults — purchasing stays off until Moyasar (or another PSP) is wired. */
 export const DEFAULT_CAPABILITY_CONFIG: CapabilityConfig = {
   defaults: {
-    purchasingEnabled: true,
-    externalPaymentsEnabled: true,
-    giftCardPurchaseEnabled: true,
-    directGameTopUpEnabled: true,
+    purchasingEnabled: false,
+    externalPaymentsEnabled: false,
+    giftCardPurchaseEnabled: false,
+    directGameTopUpEnabled: false,
     walletFundingEnabled: false,
     storeCreditEnabled: true,
-    savedPaymentMethodsEnabled: true,
+    savedPaymentMethodsEnabled: false,
     referralsEnabled: false,
     promotionsEnabled: true,
   },
   rules: [
-    // Example local override shape for future markets — inactive by default.
-    // { when: { countries: ["XX"] }, set: { purchasingEnabled: false } },
+    // When payment integration ships, enable via remote config / env-driven rules, e.g.:
+    // { set: { purchasingEnabled: true, externalPaymentsEnabled: true, giftCardPurchaseEnabled: true, directGameTopUpEnabled: true, savedPaymentMethodsEnabled: true } },
   ],
 };
 

@@ -204,15 +204,7 @@ export function createSupabaseAuthRepository(): AuthRepository {
       const { data, error: fnError } = await getSupabaseClient().functions.invoke("reauth", {
         body: {},
       });
-      if (fnError) {
-        // Fallback local reauth token for environments without the function deployed yet
-        const token = crypto.randomUUID();
-        const reauth: ReauthToken = {
-          token,
-          expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
-        };
-        return ok(reauth);
-      }
+      if (fnError || !data) return mapSupabaseError(fnError ?? { message: "UNAUTHORIZED" });
       return ok(data as ReauthToken);
     },
 

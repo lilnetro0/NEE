@@ -4,30 +4,29 @@
 */
 
 /*
-  Content-Security-Policy
-  default-src 'self';
-  script-src 'self';
-  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-  font-src 'self' https://fonts.gstatic.com data:;
-  img-src 'self' data: blob: https:;
-  connect-src 'self' https:;
-  frame-ancestors 'none';
-  base-uri 'self';
-  form-action 'self';
-  object-src 'none'
+  NOTE: Cloudflare Pages `_headers` does not support multi-line CSP easily in all
+  setups. The active rules below are emitted; keep connect-src open to https for
+  Supabase project hosts.
 */
 
 /*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-Frame-Options: DENY
 */
+
+/
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-Frame-Options: DENY
+  Cache-Control: no-cache
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
 /manifest.webmanifest
   Cache-Control: public, max-age=3600
-
-/
-  Cache-Control: no-cache
