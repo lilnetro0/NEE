@@ -4,7 +4,7 @@ android {
     namespace = "com.lilnetro0.nexus"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.lilnetro0.netr"
+        applicationId "com.lilnetro01.talal"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

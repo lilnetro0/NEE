@@ -14,8 +14,8 @@ import type { CapacitorConfig } from "@capacitor/cli";
 const serverUrl = process.env.CAP_SERVER_URL?.trim();
 
 const config: CapacitorConfig = {
-  appId: "com.lilnetro0.netr",
-  appName: "NETRO",
+  appId: "com.lilnetro01.talal",
+  appName: "ME",
   webDir: ".output/public",
   ...(serverUrl
     ? {

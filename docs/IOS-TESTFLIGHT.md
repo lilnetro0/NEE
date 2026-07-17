@@ -4,7 +4,7 @@
 
 | Item | Value |
 |------|--------|
-| Bundle ID | `com.lilnetro0.netr` |
+| Bundle ID | `com.lilnetro01.talal` |
 | Team ID | `T8KY6PR359` |
 | App Store Connect app | NNN |
 | ASC API Key ID | `PC52DBNDLS` |
@@ -15,7 +15,7 @@ Capacitor `appId`, Xcode `PRODUCT_BUNDLE_IDENTIFIER`, and Codemagic `ios_signing
 ## Codemagic secrets (never commit)
 
 1. **Distribution signing**
-   - Upload `.p12` + App Store `.mobileprovision` for `com.lilnetro0.netr`
+   - Upload `.p12` + App Store `.mobileprovision` for `com.lilnetro01.talal`
 2. **App Store Connect API**
    - Environment variable `APP_STORE_CONNECT_PRIVATE_KEY` = full contents of `AuthKey_PC52DBNDLS.p8`
 3. **Release web env**
