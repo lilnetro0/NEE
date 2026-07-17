@@ -1,6 +1,10 @@
 # Railway (Railpack) — NETRO frontend
 #
 # TanStack Start + Nitro writes client assets to `.output/public` (not `dist`).
+# Railpack's Vite SPA path still defaults to `dist` unless RAILPACK_SPA_OUTPUT_DIR
+# is set as a Railway *service* variable (toml [variables] is not applied at
+# Railpack plan time). Stage into `dist` after prepare:capacitor so deploy works
+# without dashboard config.
 #
 # Also set these in the Railway service (build-time):
 #   VITE_APP_ENV=production
@@ -12,12 +16,8 @@
 
 [build]
 builder = "RAILPACK"
-buildCommand = "bun run build && bun run prepare:capacitor"
+buildCommand = "bun run build && bun run prepare:capacitor && rm -rf dist && mkdir -p dist && cp -a .output/public/. dist/"
 
 [deploy]
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
-
-# Force Railpack SPA root away from default `dist`.
-[variables]
-RAILPACK_SPA_OUTPUT_DIR = ".output/public"

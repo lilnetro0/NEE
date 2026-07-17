@@ -38,13 +38,15 @@ After changing `package.json` / `package-lock.json`, regenerate and commit `bun.
 bun install
 ```
 
-Config: [`railway.toml`](../railway.toml). In the Railway service, set:
+Config: [`railway.toml`](../railway.toml). The build command stages
+`.output/public` → `dist` so Railpack’s default SPA root works (toml
+`[variables]` are not applied at Railpack plan time). Optionally set
+`RAILPACK_SPA_OUTPUT_DIR=.output/public` as a Railway service variable
+instead of relying on the copy step.
 
-```env
-RAILPACK_SPA_OUTPUT_DIR=.output/public
-```
-
-plus production `VITE_*` vars (build-time). Full SSR for Cloudflare Workers remains the primary web path; Railway serves the Capacitor-prepared static shell from `.output/public`.
+Also set production `VITE_*` vars (build-time). Full SSR for Cloudflare
+Workers remains the primary web path; Railway serves the Capacitor-prepared
+static shell.
 
 ## Host headers
 
