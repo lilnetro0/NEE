@@ -1,18 +1,28 @@
 # Codemagic CI/CD for NETRO (Capacitor 8 + SPM)
 # https://docs.codemagic.io/yaml-quick-start/building-an-ionic-app/
 #
+# Bundle ID:  com.lilnetro0.netro
+# Team ID:    T8KY6PR359
+# ASC app:    NNN
+#
 # Capacitor 8 iOS uses App.xcodeproj (Swift Package Manager).
 #
-# Code signing (required for IPA):
-#   1. Codemagic → Teams → Code signing identities
-#      - Upload certificate: netro.p12 (enter the .p12 password)
-#      - Upload profile:     Nexu.mobileprovision
-#   2. Run workflow "NETRO iOS Release"
+# Code signing (Release IPA) — manual profiles in Codemagic UI:
+#   Teams → Code signing identities
+#   - Upload distribution .p12 (password when prompted)
+#   - Upload App Store .mobileprovision for com.lilnetro0.netro
 #
-# Bundle ID: com.lilnetro0.nexus
+# TestFlight upload — App Store Connect API key in Codemagic UI:
+#   Add encrypted / secret env var APP_STORE_CONNECT_PRIVATE_KEY = contents of AuthKey_PC52DBNDLS.p8
+#   (Key ID + Issuer ID are below; never commit the .p8 file)
 #
-# Vite 8 / Rolldown: install with `npm ci --include=optional` so Darwin
-# native bindings from optionalDependencies are present on macOS runners.
+# Release web env (set in Codemagic UI — no invented defaults):
+#   VITE_APP_ENV=production
+#   VITE_USE_MOCKS=false
+#   VITE_API_BASE_URL=https://<your-real-netro-api>/api
+#   VITE_ENABLE_DEV_TOOLS=false
+#
+# Vite 8 / Rolldown: `npm ci --include=optional` for Darwin native bindings.
 
 workflows:
   ios-workflow:
@@ -38,8 +48,6 @@ workflows:
           npm --version
           npm list vite rolldown @rolldown/binding-darwin-arm64 @rolldown/binding-darwin-x64 @rolldown/binding-darwin-universal || true
           ls -la node_modules/@rolldown || true
-          # @rolldown/binding-darwin-universal is not published for rolldown 1.2.0;
-          # Codemagic mac_mini_m2 needs darwin-arm64 (x64 kept for Intel hosts).
           if [ ! -d "node_modules/@rolldown/binding-darwin-arm64" ] && [ ! -d "node_modules/@rolldown/binding-darwin-x64" ] && [ ! -d "node_modules/@rolldown/binding-darwin-universal" ]; then
             echo "ERROR: Missing Darwin Rolldown native binding after npm ci --include=optional"
             exit 1
@@ -101,6 +109,8 @@ workflows:
         XCODE_PROJECT: "App.xcodeproj"
         XCODE_SCHEME: "App"
         CM_CLONE_DEPTH: 1
+        APP_STORE_CONNECT_KEY_IDENTIFIER: PC52DBNDLS
+        APP_STORE_CONNECT_ISSUER_ID: e3140c78-ce9e-40ac-8a10-2f850f3d57f9
       node: 22
       xcode: latest
     scripts:
@@ -124,13 +134,48 @@ workflows:
             exit 1
           fi
           echo "Darwin Rolldown binding OK"
+      - name: Verify production env (no mocks, no placeholder API)
+        script: |
+          set -euo pipefail
+          export VITE_APP_ENV="${VITE_APP_ENV:-production}"
+          export VITE_USE_MOCKS="${VITE_USE_MOCKS:-false}"
+          export VITE_ENABLE_DEV_TOOLS="false"
+          if [ "${VITE_USE_MOCKS}" != "false" ]; then
+            echo "ERROR: Release builds forbid mocks. Set VITE_USE_MOCKS=false in Codemagic."
+            exit 1
+          fi
+          if [ -z "${VITE_API_BASE_URL:-}" ]; then
+            echo "ERROR: VITE_API_BASE_URL must be set in Codemagic for Release (real NETRO API)."
+            exit 1
+          fi
+          case "${VITE_API_BASE_URL}" in
+            *localhost*|*127.0.0.1*|*example.com*|*example.netro*)
+              echo "ERROR: VITE_API_BASE_URL looks like a placeholder/localhost: ${VITE_API_BASE_URL}"
+              exit 1
+              ;;
+          esac
+          echo "Production env OK (mocks off, API URL set)"
+      - name: Verify Bundle ID consistency
+        script: |
+          set -euo pipefail
+          CAP_ID="$(node -e "const fs=require('fs'); const t=fs.readFileSync('capacitor.config.ts','utf8'); const m=t.match(/appId:\\s*[\\\"']([^\\\"']+)[\\\"']/); if(!m){console.error('Could not parse appId'); process.exit(1);} console.log(m[1]);")"
+          PBX_ID="$(grep -E 'PRODUCT_BUNDLE_IDENTIFIER = ' ios/App/App.xcodeproj/project.pbxproj | head -1 | sed 's/.*= //;s/;//' | tr -d '[:space:]')"
+          CM_ID="com.lilnetro0.netro"
+          echo "capacitor.config.ts appId:           ${CAP_ID}"
+          echo "Xcode PRODUCT_BUNDLE_IDENTIFIER:    ${PBX_ID}"
+          echo "Codemagic ios_signing.bundle_id:    ${CM_ID}"
+          if [ "${CAP_ID}" != "${PBX_ID}" ] || [ "${CAP_ID}" != "${CM_ID}" ]; then
+            echo "ERROR: Bundle Identifiers are inconsistent."
+            exit 1
+          fi
+          echo "Bundle ID consistency OK"
       - name: Build web assets
         script: |
           set -euo pipefail
           export VITE_APP_ENV="${VITE_APP_ENV:-production}"
           export VITE_USE_MOCKS="${VITE_USE_MOCKS:-false}"
-          export VITE_API_BASE_URL="${VITE_API_BASE_URL:-https://api.example.netro.app}"
           export VITE_ENABLE_DEV_TOOLS="false"
+          : "${VITE_API_BASE_URL:?VITE_API_BASE_URL is required}"
           export VITE_APP_VERSION="${VITE_APP_VERSION:-1.0.0}"
           export VITE_BUILD_SHA="${VITE_BUILD_SHA:-${CM_COMMIT}}"
           npm run build
@@ -145,11 +190,15 @@ workflows:
           npx cap sync ios
       - name: Set up code signing settings on Xcode project
         script: |
+          set -euo pipefail
           xcode-project use-profiles
       - name: Build IPA
         script: |
           set -euo pipefail
           cd "$CM_BUILD_DIR/ios/App"
+          if [ -n "${CM_BUILD_NUMBER:-}" ]; then
+            xcrun agvtool new-version -all "$CM_BUILD_NUMBER" || true
+          fi
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME"
@@ -157,6 +206,13 @@ workflows:
       - ios/App/build/ios/ipa/*.ipa
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        # Private key: set APP_STORE_CONNECT_PRIVATE_KEY in Codemagic (AuthKey_PC52DBNDLS.p8 contents).
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
 
   android-workflow:
     name: NETRO Android
@@ -164,7 +220,7 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       vars:
-        PACKAGE_NAME: "com.lilnetro0.nexus"
+        PACKAGE_NAME: "com.lilnetro0.netro"
         CM_CLONE_DEPTH: 1
       node: 22
     scripts:
