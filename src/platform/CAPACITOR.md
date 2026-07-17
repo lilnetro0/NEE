@@ -20,7 +20,13 @@ This repo uses:
 ```bash
 npm run cap:sync:android
 # equivalent to: build → prepare:capacitor → npx cap sync android
+
+npm run cap:sync:ios
 ```
+
+**iOS note (Capacitor 8):** the native project is `ios/App/App.xcodeproj` (Swift Package
+Manager). There is no CocoaPods `App.xcworkspace`. Codemagic builds with
+`--project App.xcodeproj`.
 
 Do **not** set `webDir` to `Dist` or `dist` — those folders are not produced by this stack.
 
