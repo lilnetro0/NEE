@@ -1,17 +1,14 @@
 # Railway (Railpack) — NETRO frontend
 #
-# This app is TanStack Start + Nitro. Client assets land in `.output/public`
-# (not Vite's default `dist`). Set the SPA output dir accordingly.
+# TanStack Start + Nitro writes client assets to `.output/public` (not `dist`).
 #
-# Required service variables (also set production VITE_* at build time):
-#   RAILPACK_SPA_OUTPUT_DIR=.output/public
+# Also set these in the Railway service (build-time):
 #   VITE_APP_ENV=production
 #   VITE_USE_MOCKS=false
 #   VITE_API_BASE_URL=https://your-api.example.com/api
 #   VITE_ENABLE_DEV_TOOLS=false
 #
-# Keep bun.lock in sync with package.json (`bun install`) so
-# `bun install --frozen-lockfile` succeeds on Railpack.
+# Keep bun.lock in sync with package.json (`bun install`).
 
 [build]
 builder = "RAILPACK"
@@ -20,3 +17,7 @@ buildCommand = "bun run build && bun run prepare:capacitor"
 [deploy]
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
+
+# Force Railpack SPA root away from default `dist`.
+[variables]
+RAILPACK_SPA_OUTPUT_DIR = ".output/public"
