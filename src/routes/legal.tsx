@@ -24,11 +24,18 @@ function LegalIndex() {
             <Link
               key={it.to}
               to={it.to as never}
-              className={"flex items-center gap-3 px-4 py-4 active:bg-surface " + (i > 0 ? "border-t border-border" : "")}
+              className={
+                "flex items-center gap-3 px-4 py-4 active:bg-surface " +
+                (i > 0 ? "border-t border-border" : "")
+              }
             >
-              <div className="grid h-9 w-9 place-items-center rounded-xl bg-surface"><it.icon className="h-4 w-4 text-brand" /></div>
+              <div className="grid h-9 w-9 place-items-center rounded-xl bg-surface">
+                <it.icon className="h-4 w-4 text-brand" />
+              </div>
               <span className="flex-1 text-sm font-semibold">{it.label}</span>
-              <ChevronRight className={"h-4 w-4 text-muted-foreground " + (dir === "rtl" ? "rotate-180" : "")} />
+              <ChevronRight
+                className={"h-4 w-4 text-muted-foreground " + (dir === "rtl" ? "rotate-180" : "")}
+              />
             </Link>
           ))}
         </div>

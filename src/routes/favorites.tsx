@@ -13,9 +13,7 @@ export const Route = createFileRoute("/favorites")({
 function Favorites() {
   const { favorites } = useStore();
   const { t } = useI18n();
-  const { data: products = [] } = useProducts(
-    favorites.length ? { ids: favorites } : undefined,
-  );
+  const { data: products = [] } = useProducts(favorites.length ? { ids: favorites } : undefined);
   const list = favorites.length ? products : [];
   return (
     <MobileScreen>

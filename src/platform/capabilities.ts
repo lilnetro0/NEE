@@ -1,80 +1,169 @@
+import type { PlatformKind } from "./contracts";
+
 /**
- * Platform capability flags.
+ * Local market/platform capability configuration.
  *
- * Every feature that touches money, external providers or platform-restricted
- * APIs is gated by a flag here. Flags are evaluated against:
- *   - platform  (web | ios | android)
- *   - country   (customer country)
- *   - appVersion
- *   - productKind (gift_card | top_up)
- *
- * Backend can later replace `resolveCapabilities()` with a server-driven
- * config fetch; UI consumers should not import the flags map directly.
+ * UI must go through `resolveCapabilities()` / `useCapabilities()`.
+ * Remote configuration is intentionally not wired yet — swap
+ * `DEFAULT_CAPABILITY_CONFIG` later without changing screens.
  */
 
-export type Platform = "web" | "ios" | "android";
+export type Platform = PlatformKind;
+
+export type ProductType = "gift_card" | "direct_topup";
+
+export type CapabilityId =
+  | "purchasingEnabled"
+  | "externalPaymentsEnabled"
+  | "giftCardPurchaseEnabled"
+  | "directGameTopUpEnabled"
+  | "walletFundingEnabled"
+  | "storeCreditEnabled"
+  | "savedPaymentMethodsEnabled"
+  | "referralsEnabled"
+  | "promotionsEnabled";
+
+export type Capabilities = Readonly<Record<CapabilityId, boolean>>;
 
 export type CapabilityContext = {
   platform: Platform;
+  /** ISO 3166-1 alpha-2 country code (e.g. "SA"). */
   country: string;
   appVersion: string;
-  productKind?: "gift_card" | "top_up";
+  productType?: ProductType;
 };
 
-export type CapabilityFlag =
-  | "purchasing"
-  | "store_credit_pay"
-  | "external_payments"
-  | "gift_card_purchase"
-  | "direct_topup"
-  | "account_verification"
-  | "apple_pay"
-  | "stc_pay"
-  | "mada"
-  | "visa"
-  | "biometric_reveal";
-
-/** Baseline defaults; overridden per-context in `resolveCapabilities()`. */
-const DEFAULTS: Record<CapabilityFlag, boolean> = {
-  purchasing: true,
-  store_credit_pay: true,
-  external_payments: true,
-  gift_card_purchase: true,
-  direct_topup: true,
-  account_verification: true,
-  apple_pay: true,
-  stc_pay: true,
-  mada: true,
-  visa: true,
-  biometric_reveal: false,
+export type CapabilityRule = {
+  /** All listed conditions must match for the rule to apply. */
+  when?: {
+    platforms?: readonly Platform[];
+    countries?: readonly string[];
+    /** Inclusive minimum app version (major.minor.patch). */
+    minAppVersion?: string;
+    productTypes?: readonly ProductType[];
+  };
+  set: Partial<Capabilities>;
 };
 
-export function resolveCapabilities(ctx: CapabilityContext): Record<CapabilityFlag, boolean> {
-  const flags = { ...DEFAULTS };
+export type CapabilityConfig = {
+  defaults: Capabilities;
+  rules: readonly CapabilityRule[];
+};
 
-  // Apple Pay is iOS / web-on-safari only. Assume web supports it when Safari
-  // detects it; keep true for now and gate at usage time.
-  if (ctx.platform === "android") flags.apple_pay = false;
+/** Development defaults. Wallet funding stays off — no deposits/withdrawals. */
+export const DEFAULT_CAPABILITY_CONFIG: CapabilityConfig = {
+  defaults: {
+    purchasingEnabled: true,
+    externalPaymentsEnabled: true,
+    giftCardPurchaseEnabled: true,
+    directGameTopUpEnabled: true,
+    walletFundingEnabled: false,
+    storeCreditEnabled: true,
+    savedPaymentMethodsEnabled: true,
+    referralsEnabled: false,
+    promotionsEnabled: true,
+  },
+  rules: [
+    // Example local override shape for future markets — inactive by default.
+    // { when: { countries: ["XX"] }, set: { purchasingEnabled: false } },
+  ],
+};
 
-  // STC Pay & Mada are KSA-only.
-  if (ctx.country !== "SA") {
-    flags.stc_pay = false;
-    flags.mada = false;
+export const DEFAULT_MARKET_COUNTRY = "SA";
+
+export type PaymentRailCapabilities = Readonly<{
+  applePayEnabled: boolean;
+  stcPayEnabled: boolean;
+  madaEnabled: boolean;
+  visaEnabled: boolean;
+}>;
+
+export function compareAppVersions(a: string, b: string): number {
+  const parse = (value: string) =>
+    value
+      .split(".")
+      .map((part) => Number.parseInt(part.replace(/[^\d]/g, ""), 10) || 0)
+      .concat([0, 0, 0])
+      .slice(0, 3);
+  const left = parse(a);
+  const right = parse(b);
+  for (let index = 0; index < 3; index += 1) {
+    if (left[index] !== right[index]) return left[index] - right[index];
   }
+  return 0;
+}
 
-  // Biometric reveal only makes sense on native.
-  flags.biometric_reveal = ctx.platform !== "web";
+function ruleMatches(rule: CapabilityRule, ctx: CapabilityContext): boolean {
+  const when = rule.when;
+  if (!when) return true;
+  if (when.platforms && !when.platforms.includes(ctx.platform)) return false;
+  if (when.countries && !when.countries.includes(ctx.country)) return false;
+  if (when.productTypes && (!ctx.productType || !when.productTypes.includes(ctx.productType))) {
+    return false;
+  }
+  if (when.minAppVersion && compareAppVersions(ctx.appVersion, when.minAppVersion) < 0) {
+    return false;
+  }
+  return true;
+}
 
-  // Product-kind gates. Backend can flip these per SKU later.
-  if (ctx.productKind === "top_up") {
-    // No policy change today, but this hook exists.
+/**
+ * Pure capability resolution. Safe to unit-test without a framework.
+ */
+export function resolveCapabilities(
+  ctx: CapabilityContext,
+  config: CapabilityConfig = DEFAULT_CAPABILITY_CONFIG,
+): Capabilities {
+  const flags: Record<CapabilityId, boolean> = { ...config.defaults };
+
+  for (const rule of config.rules) {
+    if (!ruleMatches(rule, ctx)) continue;
+    Object.assign(flags, rule.set);
   }
 
   return flags;
 }
 
-export function isEnabled(flag: CapabilityFlag, ctx: CapabilityContext): boolean {
-  return resolveCapabilities(ctx)[flag];
+export function isCapabilityEnabled(
+  id: CapabilityId,
+  ctx: CapabilityContext,
+  config: CapabilityConfig = DEFAULT_CAPABILITY_CONFIG,
+): boolean {
+  return resolveCapabilities(ctx, config)[id];
+}
+
+/**
+ * Product purchase requires the master purchasing flag plus the matching
+ * product-type flag.
+ */
+export function canPurchaseProduct(caps: Capabilities, productType: ProductType): boolean {
+  if (!caps.purchasingEnabled) return false;
+  if (productType === "gift_card") return caps.giftCardPurchaseEnabled;
+  return caps.directGameTopUpEnabled;
+}
+
+/**
+ * Checkout payment rails. Always subordinated to `externalPaymentsEnabled`.
+ */
+export function resolvePaymentRails(
+  ctx: CapabilityContext,
+  caps: Capabilities = resolveCapabilities(ctx),
+): PaymentRailCapabilities {
+  if (!caps.externalPaymentsEnabled) {
+    return {
+      applePayEnabled: false,
+      stcPayEnabled: false,
+      madaEnabled: false,
+      visaEnabled: false,
+    };
+  }
+
+  return {
+    applePayEnabled: ctx.platform !== "android",
+    stcPayEnabled: ctx.country === "SA",
+    madaEnabled: ctx.country === "SA",
+    visaEnabled: true,
+  };
 }
 
 // ============ App-wide policies ============

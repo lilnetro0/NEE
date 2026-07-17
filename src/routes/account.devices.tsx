@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Smartphone } from "lucide-react";
 import { MobileScreen, TopBar, ScreenBody } from "@/components/shell/Shell";
 import { useI18n } from "@/i18n/I18nProvider";
-import { device } from "@/platform/adapters";
+import { usePlatform } from "@/platform/PlatformProvider";
+import type { DeviceInformation } from "@/platform/contracts";
 
 export const Route = createFileRoute("/account/devices")({
   component: Devices,
@@ -11,7 +13,26 @@ export const Route = createFileRoute("/account/devices")({
 function Devices() {
   const { locale } = useI18n();
   const isAr = locale === "ar";
-  const info = device.info();
+  const { device, appVersion } = usePlatform();
+  const [info, setInfo] = useState<DeviceInformation>({
+    platform: "web",
+    operatingSystem: "web",
+    osVersion: "web",
+    locale: "en",
+  });
+  const [version, setVersion] = useState("1.0.0");
+
+  useEffect(() => {
+    let active = true;
+    void Promise.all([device.getInfo(), appVersion.getInfo()]).then(([deviceInfo, appInfo]) => {
+      if (!active) return;
+      setInfo(deviceInfo);
+      setVersion(appInfo.version);
+    });
+    return () => {
+      active = false;
+    };
+  }, [appVersion, device]);
 
   return (
     <MobileScreen>
@@ -27,14 +48,14 @@ function Devices() {
                 {isAr ? "الجهاز الحالي" : "Current device"}
               </div>
               <div className="text-xs text-muted-foreground" dir="ltr">
-                {info.platform} · {info.osVersion} · {info.appVersion}
+                {info.platform} · {info.osVersion} · {version}
               </div>
             </div>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
             <Row label={isAr ? "المنصة" : "Platform"} value={info.platform} />
             <Row label={isAr ? "اللغة" : "Locale"} value={info.locale} />
-            <Row label={isAr ? "إصدار التطبيق" : "App version"} value={info.appVersion} />
+            <Row label={isAr ? "إصدار التطبيق" : "App version"} value={version} />
             <Row label={isAr ? "إصدار النظام" : "OS version"} value={info.osVersion} />
           </div>
         </div>
@@ -47,7 +68,9 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl bg-secondary/60 p-3">
       <div className="text-[11px] text-muted-foreground">{label}</div>
-      <div className="mt-0.5 font-mono text-xs font-semibold" dir="ltr">{value}</div>
+      <div className="mt-0.5 font-mono text-xs font-semibold" dir="ltr">
+        {value}
+      </div>
     </div>
   );
 }

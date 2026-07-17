@@ -5,6 +5,7 @@ import { MobileScreen, ScreenBody, TopBar, BottomNav } from "@/components/shell/
 import { ProductCard } from "@/components/shell/Cards";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useProducts } from "@/data-access";
+import { usePlatform } from "@/platform/PlatformProvider";
 
 export const Route = createFileRoute("/search")({
   component: Search,
@@ -17,24 +18,30 @@ function Search() {
   const [q, setQ] = useState("");
   const [recent, setRecent] = useState<string[]>([]);
   const { data: products = [] } = useProducts();
+  const { preferences } = usePlatform();
 
   useEffect(() => {
-    try {
-      const r = localStorage.getItem("netro:recent-search");
-      if (r) setRecent(JSON.parse(r));
-    } catch {
-      /* ignore */
-    }
-  }, []);
+    let active = true;
+    void preferences.get("netro:recent-search").then((value) => {
+      if (!active || !value) return;
+      try {
+        const parsed: unknown = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          setRecent(parsed.filter((item): item is string => typeof item === "string"));
+        }
+      } catch {
+        // Ignore invalid legacy preferences.
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [preferences]);
 
   const save = (term: string) => {
     setRecent((prev) => {
       const next = [term, ...prev.filter((x) => x !== term)].slice(0, 6);
-      try {
-        localStorage.setItem("netro:recent-search", JSON.stringify(next));
-      } catch {
-        /* ignore */
-      }
+      void preferences.set("netro:recent-search", JSON.stringify(next));
       return next;
     });
   };
@@ -83,7 +90,7 @@ function Search() {
                   <button
                     onClick={() => {
                       setRecent([]);
-                      localStorage.removeItem("netro:recent-search");
+                      void preferences.remove("netro:recent-search");
                     }}
                     className="text-xs text-brand"
                   >

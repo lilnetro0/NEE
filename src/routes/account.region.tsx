@@ -39,7 +39,9 @@ function Region() {
             <span className="text-2xl">{r.flag}</span>
             <div className="flex-1 text-left">
               <div className="text-sm font-semibold">{r.label}</div>
-              <div className="text-xs text-muted-foreground">{r.code} · {r.cur}</div>
+              <div className="text-xs text-muted-foreground">
+                {r.code} · {r.cur}
+              </div>
             </div>
             {sel === r.id && <Check className="h-5 w-5 text-brand" />}
           </button>

@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
-import { useState } from "react";
-import { Lock } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Fingerprint, Lock } from "lucide-react";
 import { MobileScreen, TopBar, ScreenBody } from "@/components/shell/Shell";
 import { useI18n } from "@/i18n/I18nProvider";
+import { useAuth } from "@/auth/AuthProvider";
 import { useUserActions } from "@/data-access";
-import { secureStorage } from "@/platform/adapters";
+import { usePlatform } from "@/platform/PlatformProvider";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/reauth")({
@@ -15,18 +16,25 @@ export const Route = createFileRoute("/reauth")({
 });
 
 /**
- * Fresh password re-authentication before revealing sensitive codes,
- * changing email/phone, deleting the account, etc. The resulting short-lived
- * token is written to secure storage, not localStorage.
+ * Fresh re-authentication before sensitive actions.
+ * Password verifies identity with AuthRepository; biometrics only unlock a
+ * local session lock and are not offered as a backend IdP here.
  */
 function Reauth() {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const isAr = locale === "ar";
   const { redirect } = useSearch({ from: "/reauth" });
   const nav = useNavigate();
   const { reauth } = useUserActions();
+  const authUi = useAuth();
+  const { localUnlock } = usePlatform();
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [bioAvailable, setBioAvailable] = useState(false);
+
+  useEffect(() => {
+    void localUnlock.isAvailable().then(setBioAvailable);
+  }, [localUnlock]);
 
   const submit = async () => {
     if (password.length < 6) return;
@@ -34,34 +42,41 @@ function Reauth() {
     try {
       const result = await reauth(password);
       if (!result.ok) {
-        toast.error(isAr ? "كلمة المرور غير صحيحة" : "Incorrect password");
+        toast.error(t("auth_invalidCredentials"));
         return;
       }
-      await secureStorage.set("reauth", result.data.token);
-      nav({ to: redirect });
+      await authUi.storeReauthToken(result.data.token);
+      nav({ to: redirect as never });
     } catch {
-      toast.error(isAr ? "كلمة المرور غير صحيحة" : "Incorrect password");
+      toast.error(t("auth_invalidCredentials"));
     } finally {
       setBusy(false);
     }
   };
 
+  const tryLocalUnlock = async () => {
+    const result = await authUi.unlockSessionLocally();
+    if (result === "unlocked") {
+      nav({ to: redirect as never });
+      return;
+    }
+    toast.message(
+      isAr
+        ? "فتح القفل المحلي غير متاح هنا — أدخل كلمة المرور."
+        : "Local unlock isn't available here — enter your password.",
+    );
+  };
+
   return (
     <MobileScreen>
-      <TopBar title={isAr ? "تحقّق من الهوية" : "Confirm it's you"} showBack />
+      <TopBar title={t("auth_reauthTitle")} showBack />
       <ScreenBody>
         <div className="mx-auto mt-8 flex max-w-sm flex-col items-center text-center">
           <div className="grid h-16 w-16 place-items-center rounded-2xl bg-primary/15 text-primary">
             <Lock className="h-7 w-7" />
           </div>
-          <h1 className="mt-4 font-display text-xl font-bold">
-            {isAr ? "أعد إدخال كلمة المرور" : "Re-enter your password"}
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {isAr
-              ? "لحمايتك، نطلب كلمة المرور قبل عرض المعلومات الحساسة."
-              : "For your security, we ask for your password before showing sensitive information."}
-          </p>
+          <h1 className="mt-4 font-display text-xl font-bold">{t("auth_reauthHeading")}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{t("auth_reauthBody")}</p>
 
           <input
             type="password"
@@ -73,12 +88,25 @@ function Reauth() {
           />
 
           <button
-            onClick={submit}
+            type="button"
+            onClick={() => void submit()}
             disabled={busy}
             className="mt-4 h-14 w-full rounded-full gradient-brand text-sm font-bold text-brand-foreground disabled:opacity-50"
           >
-            {busy ? (isAr ? "جاري التحقق..." : "Verifying...") : isAr ? "متابعة" : "Continue"}
+            {busy ? t("loading") : t("continue")}
           </button>
+
+          {bioAvailable && (
+            <button
+              type="button"
+              onClick={() => void tryLocalUnlock()}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border border-border py-3 text-sm font-semibold"
+            >
+              <Fingerprint className="h-4 w-4" />
+              {t("auth_localUnlock")}
+            </button>
+          )}
+          <p className="mt-3 text-[11px] text-muted-foreground">{t("auth_localUnlockHint")}</p>
         </div>
       </ScreenBody>
     </MobileScreen>

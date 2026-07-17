@@ -4,11 +4,13 @@ import type { ProductRepository } from "./product-repository";
 import type { PromotionRepository } from "./promotion-repository";
 import type { SupportRepository } from "./support-repository";
 import type { UserRepository } from "./user-repository";
+import type { AuthRepository } from "./auth-repository";
 
 export type Repositories = {
   products: ProductRepository;
   orders: OrderRepository;
   users: UserRepository;
+  auth: AuthRepository;
   notifications: NotificationRepository;
   support: SupportRepository;
   promotions: PromotionRepository;
@@ -20,3 +22,4 @@ export type { ProductRepository } from "./product-repository";
 export type { PromotionRepository } from "./promotion-repository";
 export type { SupportRepository } from "./support-repository";
 export type { UserRepository } from "./user-repository";
+export type { AuthRepository } from "./auth-repository";

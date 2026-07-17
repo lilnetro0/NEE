@@ -28,15 +28,30 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SupportNewRouteImport } from './routes/support.new'
 import { Route as StatusUpdateRequiredRouteImport } from './routes/status.update-required'
 import { Route as StatusSupplierOutageRouteImport } from './routes/status.supplier-outage'
+import { Route as StatusRefundRequestedRouteImport } from './routes/status.refund-requested'
+import { Route as StatusRefundProcessingRouteImport } from './routes/status.refund-processing'
+import { Route as StatusRefundCompletedRouteImport } from './routes/status.refund-completed'
 import { Route as StatusProductUnavailableRouteImport } from './routes/status.product-unavailable'
 import { Route as StatusPriceChangedRouteImport } from './routes/status.price-changed'
+import { Route as StatusPaymentReturnRouteImport } from './routes/status.payment-return'
+import { Route as StatusPaymentPendingRouteImport } from './routes/status.payment-pending'
+import { Route as StatusPaymentFailedRouteImport } from './routes/status.payment-failed'
+import { Route as StatusPaymentCancelledRouteImport } from './routes/status.payment-cancelled'
+import { Route as StatusPartialFulfillmentRouteImport } from './routes/status.partial-fulfillment'
+import { Route as StatusOfflineRouteImport } from './routes/status.offline'
+import { Route as StatusManualReviewRouteImport } from './routes/status.manual-review'
 import { Route as StatusMaintenanceRouteImport } from './routes/status.maintenance'
+import { Route as StatusFulfillmentPendingRouteImport } from './routes/status.fulfillment-pending'
+import { Route as StatusFulfillmentFailedRouteImport } from './routes/status.fulfillment-failed'
+import { Route as StatusApiErrorRouteImport } from './routes/status.api-error'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as OrderIdRouteImport } from './routes/order.$id'
 import { Route as LegalTermsRouteImport } from './routes/legal.terms'
 import { Route as LegalRefundsRouteImport } from './routes/legal.refunds'
 import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
 import { Route as LegalAboutRouteImport } from './routes/legal.about'
+import { Route as DevOrderScenariosRouteImport } from './routes/dev.order-scenarios'
+import { Route as DevOperationalStatesRouteImport } from './routes/dev.operational-states'
 import { Route as CategoriesSlugRouteImport } from './routes/categories.$slug'
 import { Route as BrandsSlugRouteImport } from './routes/brands.$slug'
 import { Route as AuthSignupRouteImport } from './routes/auth.signup'
@@ -158,6 +173,21 @@ const StatusSupplierOutageRoute = StatusSupplierOutageRouteImport.update({
   path: '/status/supplier-outage',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StatusRefundRequestedRoute = StatusRefundRequestedRouteImport.update({
+  id: '/status/refund-requested',
+  path: '/status/refund-requested',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StatusRefundProcessingRoute = StatusRefundProcessingRouteImport.update({
+  id: '/status/refund-processing',
+  path: '/status/refund-processing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StatusRefundCompletedRoute = StatusRefundCompletedRouteImport.update({
+  id: '/status/refund-completed',
+  path: '/status/refund-completed',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StatusProductUnavailableRoute =
   StatusProductUnavailableRouteImport.update({
     id: '/status/product-unavailable',
@@ -169,9 +199,61 @@ const StatusPriceChangedRoute = StatusPriceChangedRouteImport.update({
   path: '/status/price-changed',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StatusPaymentReturnRoute = StatusPaymentReturnRouteImport.update({
+  id: '/status/payment-return',
+  path: '/status/payment-return',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StatusPaymentPendingRoute = StatusPaymentPendingRouteImport.update({
+  id: '/status/payment-pending',
+  path: '/status/payment-pending',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StatusPaymentFailedRoute = StatusPaymentFailedRouteImport.update({
+  id: '/status/payment-failed',
+  path: '/status/payment-failed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StatusPaymentCancelledRoute = StatusPaymentCancelledRouteImport.update({
+  id: '/status/payment-cancelled',
+  path: '/status/payment-cancelled',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StatusPartialFulfillmentRoute =
+  StatusPartialFulfillmentRouteImport.update({
+    id: '/status/partial-fulfillment',
+    path: '/status/partial-fulfillment',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const StatusOfflineRoute = StatusOfflineRouteImport.update({
+  id: '/status/offline',
+  path: '/status/offline',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StatusManualReviewRoute = StatusManualReviewRouteImport.update({
+  id: '/status/manual-review',
+  path: '/status/manual-review',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StatusMaintenanceRoute = StatusMaintenanceRouteImport.update({
   id: '/status/maintenance',
   path: '/status/maintenance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StatusFulfillmentPendingRoute =
+  StatusFulfillmentPendingRouteImport.update({
+    id: '/status/fulfillment-pending',
+    path: '/status/fulfillment-pending',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const StatusFulfillmentFailedRoute = StatusFulfillmentFailedRouteImport.update({
+  id: '/status/fulfillment-failed',
+  path: '/status/fulfillment-failed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StatusApiErrorRoute = StatusApiErrorRouteImport.update({
+  id: '/status/api-error',
+  path: '/status/api-error',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProductIdRoute = ProductIdRouteImport.update({
@@ -203,6 +285,16 @@ const LegalAboutRoute = LegalAboutRouteImport.update({
   id: '/about',
   path: '/about',
   getParentRoute: () => LegalRoute,
+} as any)
+const DevOrderScenariosRoute = DevOrderScenariosRouteImport.update({
+  id: '/dev/order-scenarios',
+  path: '/dev/order-scenarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevOperationalStatesRoute = DevOperationalStatesRouteImport.update({
+  id: '/dev/operational-states',
+  path: '/dev/operational-states',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const CategoriesSlugRoute = CategoriesSlugRouteImport.update({
   id: '/$slug',
@@ -366,15 +458,30 @@ export interface FileRoutesByFullPath {
   '/auth/signup': typeof AuthSignupRoute
   '/brands/$slug': typeof BrandsSlugRoute
   '/categories/$slug': typeof CategoriesSlugRoute
+  '/dev/operational-states': typeof DevOperationalStatesRoute
+  '/dev/order-scenarios': typeof DevOrderScenariosRoute
   '/legal/about': typeof LegalAboutRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/refunds': typeof LegalRefundsRoute
   '/legal/terms': typeof LegalTermsRoute
   '/order/$id': typeof OrderIdRouteWithChildren
   '/product/$id': typeof ProductIdRouteWithChildren
+  '/status/api-error': typeof StatusApiErrorRoute
+  '/status/fulfillment-failed': typeof StatusFulfillmentFailedRoute
+  '/status/fulfillment-pending': typeof StatusFulfillmentPendingRoute
   '/status/maintenance': typeof StatusMaintenanceRoute
+  '/status/manual-review': typeof StatusManualReviewRoute
+  '/status/offline': typeof StatusOfflineRoute
+  '/status/partial-fulfillment': typeof StatusPartialFulfillmentRoute
+  '/status/payment-cancelled': typeof StatusPaymentCancelledRoute
+  '/status/payment-failed': typeof StatusPaymentFailedRoute
+  '/status/payment-pending': typeof StatusPaymentPendingRoute
+  '/status/payment-return': typeof StatusPaymentReturnRoute
   '/status/price-changed': typeof StatusPriceChangedRoute
   '/status/product-unavailable': typeof StatusProductUnavailableRoute
+  '/status/refund-completed': typeof StatusRefundCompletedRoute
+  '/status/refund-processing': typeof StatusRefundProcessingRoute
+  '/status/refund-requested': typeof StatusRefundRequestedRoute
   '/status/supplier-outage': typeof StatusSupplierOutageRoute
   '/status/update-required': typeof StatusUpdateRequiredRoute
   '/support/new': typeof SupportNewRoute
@@ -421,15 +528,30 @@ export interface FileRoutesByTo {
   '/auth/signup': typeof AuthSignupRoute
   '/brands/$slug': typeof BrandsSlugRoute
   '/categories/$slug': typeof CategoriesSlugRoute
+  '/dev/operational-states': typeof DevOperationalStatesRoute
+  '/dev/order-scenarios': typeof DevOrderScenariosRoute
   '/legal/about': typeof LegalAboutRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/refunds': typeof LegalRefundsRoute
   '/legal/terms': typeof LegalTermsRoute
   '/order/$id': typeof OrderIdRouteWithChildren
   '/product/$id': typeof ProductIdRouteWithChildren
+  '/status/api-error': typeof StatusApiErrorRoute
+  '/status/fulfillment-failed': typeof StatusFulfillmentFailedRoute
+  '/status/fulfillment-pending': typeof StatusFulfillmentPendingRoute
   '/status/maintenance': typeof StatusMaintenanceRoute
+  '/status/manual-review': typeof StatusManualReviewRoute
+  '/status/offline': typeof StatusOfflineRoute
+  '/status/partial-fulfillment': typeof StatusPartialFulfillmentRoute
+  '/status/payment-cancelled': typeof StatusPaymentCancelledRoute
+  '/status/payment-failed': typeof StatusPaymentFailedRoute
+  '/status/payment-pending': typeof StatusPaymentPendingRoute
+  '/status/payment-return': typeof StatusPaymentReturnRoute
   '/status/price-changed': typeof StatusPriceChangedRoute
   '/status/product-unavailable': typeof StatusProductUnavailableRoute
+  '/status/refund-completed': typeof StatusRefundCompletedRoute
+  '/status/refund-processing': typeof StatusRefundProcessingRoute
+  '/status/refund-requested': typeof StatusRefundRequestedRoute
   '/status/supplier-outage': typeof StatusSupplierOutageRoute
   '/status/update-required': typeof StatusUpdateRequiredRoute
   '/support/new': typeof SupportNewRoute
@@ -477,15 +599,30 @@ export interface FileRoutesById {
   '/auth/signup': typeof AuthSignupRoute
   '/brands/$slug': typeof BrandsSlugRoute
   '/categories/$slug': typeof CategoriesSlugRoute
+  '/dev/operational-states': typeof DevOperationalStatesRoute
+  '/dev/order-scenarios': typeof DevOrderScenariosRoute
   '/legal/about': typeof LegalAboutRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/refunds': typeof LegalRefundsRoute
   '/legal/terms': typeof LegalTermsRoute
   '/order/$id': typeof OrderIdRouteWithChildren
   '/product/$id': typeof ProductIdRouteWithChildren
+  '/status/api-error': typeof StatusApiErrorRoute
+  '/status/fulfillment-failed': typeof StatusFulfillmentFailedRoute
+  '/status/fulfillment-pending': typeof StatusFulfillmentPendingRoute
   '/status/maintenance': typeof StatusMaintenanceRoute
+  '/status/manual-review': typeof StatusManualReviewRoute
+  '/status/offline': typeof StatusOfflineRoute
+  '/status/partial-fulfillment': typeof StatusPartialFulfillmentRoute
+  '/status/payment-cancelled': typeof StatusPaymentCancelledRoute
+  '/status/payment-failed': typeof StatusPaymentFailedRoute
+  '/status/payment-pending': typeof StatusPaymentPendingRoute
+  '/status/payment-return': typeof StatusPaymentReturnRoute
   '/status/price-changed': typeof StatusPriceChangedRoute
   '/status/product-unavailable': typeof StatusProductUnavailableRoute
+  '/status/refund-completed': typeof StatusRefundCompletedRoute
+  '/status/refund-processing': typeof StatusRefundProcessingRoute
+  '/status/refund-requested': typeof StatusRefundRequestedRoute
   '/status/supplier-outage': typeof StatusSupplierOutageRoute
   '/status/update-required': typeof StatusUpdateRequiredRoute
   '/support/new': typeof SupportNewRoute
@@ -534,15 +671,30 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/brands/$slug'
     | '/categories/$slug'
+    | '/dev/operational-states'
+    | '/dev/order-scenarios'
     | '/legal/about'
     | '/legal/privacy'
     | '/legal/refunds'
     | '/legal/terms'
     | '/order/$id'
     | '/product/$id'
+    | '/status/api-error'
+    | '/status/fulfillment-failed'
+    | '/status/fulfillment-pending'
     | '/status/maintenance'
+    | '/status/manual-review'
+    | '/status/offline'
+    | '/status/partial-fulfillment'
+    | '/status/payment-cancelled'
+    | '/status/payment-failed'
+    | '/status/payment-pending'
+    | '/status/payment-return'
     | '/status/price-changed'
     | '/status/product-unavailable'
+    | '/status/refund-completed'
+    | '/status/refund-processing'
+    | '/status/refund-requested'
     | '/status/supplier-outage'
     | '/status/update-required'
     | '/support/new'
@@ -589,15 +741,30 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/brands/$slug'
     | '/categories/$slug'
+    | '/dev/operational-states'
+    | '/dev/order-scenarios'
     | '/legal/about'
     | '/legal/privacy'
     | '/legal/refunds'
     | '/legal/terms'
     | '/order/$id'
     | '/product/$id'
+    | '/status/api-error'
+    | '/status/fulfillment-failed'
+    | '/status/fulfillment-pending'
     | '/status/maintenance'
+    | '/status/manual-review'
+    | '/status/offline'
+    | '/status/partial-fulfillment'
+    | '/status/payment-cancelled'
+    | '/status/payment-failed'
+    | '/status/payment-pending'
+    | '/status/payment-return'
     | '/status/price-changed'
     | '/status/product-unavailable'
+    | '/status/refund-completed'
+    | '/status/refund-processing'
+    | '/status/refund-requested'
     | '/status/supplier-outage'
     | '/status/update-required'
     | '/support/new'
@@ -644,15 +811,30 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/brands/$slug'
     | '/categories/$slug'
+    | '/dev/operational-states'
+    | '/dev/order-scenarios'
     | '/legal/about'
     | '/legal/privacy'
     | '/legal/refunds'
     | '/legal/terms'
     | '/order/$id'
     | '/product/$id'
+    | '/status/api-error'
+    | '/status/fulfillment-failed'
+    | '/status/fulfillment-pending'
     | '/status/maintenance'
+    | '/status/manual-review'
+    | '/status/offline'
+    | '/status/partial-fulfillment'
+    | '/status/payment-cancelled'
+    | '/status/payment-failed'
+    | '/status/payment-pending'
+    | '/status/payment-return'
     | '/status/price-changed'
     | '/status/product-unavailable'
+    | '/status/refund-completed'
+    | '/status/refund-processing'
+    | '/status/refund-requested'
     | '/status/supplier-outage'
     | '/status/update-required'
     | '/support/new'
@@ -682,11 +864,26 @@ export interface RootRouteChildren {
   SupportRoute: typeof SupportRouteWithChildren
   WalletRoute: typeof WalletRoute
   BrandsSlugRoute: typeof BrandsSlugRoute
+  DevOperationalStatesRoute: typeof DevOperationalStatesRoute
+  DevOrderScenariosRoute: typeof DevOrderScenariosRoute
   OrderIdRoute: typeof OrderIdRouteWithChildren
   ProductIdRoute: typeof ProductIdRouteWithChildren
+  StatusApiErrorRoute: typeof StatusApiErrorRoute
+  StatusFulfillmentFailedRoute: typeof StatusFulfillmentFailedRoute
+  StatusFulfillmentPendingRoute: typeof StatusFulfillmentPendingRoute
   StatusMaintenanceRoute: typeof StatusMaintenanceRoute
+  StatusManualReviewRoute: typeof StatusManualReviewRoute
+  StatusOfflineRoute: typeof StatusOfflineRoute
+  StatusPartialFulfillmentRoute: typeof StatusPartialFulfillmentRoute
+  StatusPaymentCancelledRoute: typeof StatusPaymentCancelledRoute
+  StatusPaymentFailedRoute: typeof StatusPaymentFailedRoute
+  StatusPaymentPendingRoute: typeof StatusPaymentPendingRoute
+  StatusPaymentReturnRoute: typeof StatusPaymentReturnRoute
   StatusPriceChangedRoute: typeof StatusPriceChangedRoute
   StatusProductUnavailableRoute: typeof StatusProductUnavailableRoute
+  StatusRefundCompletedRoute: typeof StatusRefundCompletedRoute
+  StatusRefundProcessingRoute: typeof StatusRefundProcessingRoute
+  StatusRefundRequestedRoute: typeof StatusRefundRequestedRoute
   StatusSupplierOutageRoute: typeof StatusSupplierOutageRoute
   StatusUpdateRequiredRoute: typeof StatusUpdateRequiredRoute
 }
@@ -826,6 +1023,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StatusSupplierOutageRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/status/refund-requested': {
+      id: '/status/refund-requested'
+      path: '/status/refund-requested'
+      fullPath: '/status/refund-requested'
+      preLoaderRoute: typeof StatusRefundRequestedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/status/refund-processing': {
+      id: '/status/refund-processing'
+      path: '/status/refund-processing'
+      fullPath: '/status/refund-processing'
+      preLoaderRoute: typeof StatusRefundProcessingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/status/refund-completed': {
+      id: '/status/refund-completed'
+      path: '/status/refund-completed'
+      fullPath: '/status/refund-completed'
+      preLoaderRoute: typeof StatusRefundCompletedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/status/product-unavailable': {
       id: '/status/product-unavailable'
       path: '/status/product-unavailable'
@@ -840,11 +1058,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StatusPriceChangedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/status/payment-return': {
+      id: '/status/payment-return'
+      path: '/status/payment-return'
+      fullPath: '/status/payment-return'
+      preLoaderRoute: typeof StatusPaymentReturnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/status/payment-pending': {
+      id: '/status/payment-pending'
+      path: '/status/payment-pending'
+      fullPath: '/status/payment-pending'
+      preLoaderRoute: typeof StatusPaymentPendingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/status/payment-failed': {
+      id: '/status/payment-failed'
+      path: '/status/payment-failed'
+      fullPath: '/status/payment-failed'
+      preLoaderRoute: typeof StatusPaymentFailedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/status/payment-cancelled': {
+      id: '/status/payment-cancelled'
+      path: '/status/payment-cancelled'
+      fullPath: '/status/payment-cancelled'
+      preLoaderRoute: typeof StatusPaymentCancelledRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/status/partial-fulfillment': {
+      id: '/status/partial-fulfillment'
+      path: '/status/partial-fulfillment'
+      fullPath: '/status/partial-fulfillment'
+      preLoaderRoute: typeof StatusPartialFulfillmentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/status/offline': {
+      id: '/status/offline'
+      path: '/status/offline'
+      fullPath: '/status/offline'
+      preLoaderRoute: typeof StatusOfflineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/status/manual-review': {
+      id: '/status/manual-review'
+      path: '/status/manual-review'
+      fullPath: '/status/manual-review'
+      preLoaderRoute: typeof StatusManualReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/status/maintenance': {
       id: '/status/maintenance'
       path: '/status/maintenance'
       fullPath: '/status/maintenance'
       preLoaderRoute: typeof StatusMaintenanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/status/fulfillment-pending': {
+      id: '/status/fulfillment-pending'
+      path: '/status/fulfillment-pending'
+      fullPath: '/status/fulfillment-pending'
+      preLoaderRoute: typeof StatusFulfillmentPendingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/status/fulfillment-failed': {
+      id: '/status/fulfillment-failed'
+      path: '/status/fulfillment-failed'
+      fullPath: '/status/fulfillment-failed'
+      preLoaderRoute: typeof StatusFulfillmentFailedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/status/api-error': {
+      id: '/status/api-error'
+      path: '/status/api-error'
+      fullPath: '/status/api-error'
+      preLoaderRoute: typeof StatusApiErrorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/product/$id': {
@@ -888,6 +1176,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/legal/about'
       preLoaderRoute: typeof LegalAboutRouteImport
       parentRoute: typeof LegalRoute
+    }
+    '/dev/order-scenarios': {
+      id: '/dev/order-scenarios'
+      path: '/dev/order-scenarios'
+      fullPath: '/dev/order-scenarios'
+      preLoaderRoute: typeof DevOrderScenariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/operational-states': {
+      id: '/dev/operational-states'
+      path: '/dev/operational-states'
+      fullPath: '/dev/operational-states'
+      preLoaderRoute: typeof DevOperationalStatesRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/categories/$slug': {
       id: '/categories/$slug'
@@ -1206,11 +1508,26 @@ const rootRouteChildren: RootRouteChildren = {
   SupportRoute: SupportRouteWithChildren,
   WalletRoute: WalletRoute,
   BrandsSlugRoute: BrandsSlugRoute,
+  DevOperationalStatesRoute: DevOperationalStatesRoute,
+  DevOrderScenariosRoute: DevOrderScenariosRoute,
   OrderIdRoute: OrderIdRouteWithChildren,
   ProductIdRoute: ProductIdRouteWithChildren,
+  StatusApiErrorRoute: StatusApiErrorRoute,
+  StatusFulfillmentFailedRoute: StatusFulfillmentFailedRoute,
+  StatusFulfillmentPendingRoute: StatusFulfillmentPendingRoute,
   StatusMaintenanceRoute: StatusMaintenanceRoute,
+  StatusManualReviewRoute: StatusManualReviewRoute,
+  StatusOfflineRoute: StatusOfflineRoute,
+  StatusPartialFulfillmentRoute: StatusPartialFulfillmentRoute,
+  StatusPaymentCancelledRoute: StatusPaymentCancelledRoute,
+  StatusPaymentFailedRoute: StatusPaymentFailedRoute,
+  StatusPaymentPendingRoute: StatusPaymentPendingRoute,
+  StatusPaymentReturnRoute: StatusPaymentReturnRoute,
   StatusPriceChangedRoute: StatusPriceChangedRoute,
   StatusProductUnavailableRoute: StatusProductUnavailableRoute,
+  StatusRefundCompletedRoute: StatusRefundCompletedRoute,
+  StatusRefundProcessingRoute: StatusRefundProcessingRoute,
+  StatusRefundRequestedRoute: StatusRefundRequestedRoute,
   StatusSupplierOutageRoute: StatusSupplierOutageRoute,
   StatusUpdateRequiredRoute: StatusUpdateRequiredRoute,
 }

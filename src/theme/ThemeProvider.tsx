@@ -1,11 +1,5 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { usePlatform } from "@/platform/PlatformProvider";
 
 type Theme = "dark" | "light";
 type Ctx = { theme: Theme; setTheme: (t: Theme) => void; toggle: () => void };
@@ -14,14 +8,18 @@ const ThemeContext = createContext<Ctx | null>(null);
 const KEY = "netro:theme";
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  const { preferences } = usePlatform();
   const [theme, setThemeState] = useState<Theme>("dark");
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(KEY) as Theme | null;
-      if (stored === "dark" || stored === "light") setThemeState(stored);
-    } catch {}
-  }, []);
+    let active = true;
+    void preferences.get(KEY).then((stored) => {
+      if (active && (stored === "dark" || stored === "light")) setThemeState(stored);
+    });
+    return () => {
+      active = false;
+    };
+  }, [preferences]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -34,20 +32,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       theme,
       setTheme: (t) => {
         setThemeState(t);
-        try {
-          localStorage.setItem(KEY, t);
-        } catch {}
+        void preferences.set(KEY, t);
       },
       toggle: () =>
         setThemeState((prev) => {
           const next = prev === "dark" ? "light" : "dark";
-          try {
-            localStorage.setItem(KEY, next);
-          } catch {}
+          void preferences.set(KEY, next);
           return next;
         }),
     }),
-    [theme],
+    [preferences, theme],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

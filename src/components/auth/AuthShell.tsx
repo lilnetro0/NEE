@@ -4,8 +4,16 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useNavigate } from "@tanstack/react-router";
 
-export function AuthShell({ title, subtitle, children, footer }: {
-  title: string; subtitle?: string; children: ReactNode; footer?: ReactNode;
+export function AuthShell({
+  title,
+  subtitle,
+  children,
+  footer,
+}: {
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+  footer?: ReactNode;
 }) {
   const { dir } = useI18n();
   const nav = useNavigate();
@@ -22,7 +30,9 @@ export function AuthShell({ title, subtitle, children, footer }: {
       </div>
       <div className="mt-4">
         <div className="mb-6 flex items-center gap-3">
-          <div className="grid h-12 w-12 place-items-center rounded-2xl gradient-brand font-black text-brand-foreground">N</div>
+          <div className="grid h-12 w-12 place-items-center rounded-2xl gradient-brand font-black text-brand-foreground">
+            N
+          </div>
           <span className="font-display text-xl font-black">NETRO</span>
         </div>
         <h1 className="font-display text-3xl font-black leading-tight">{title}</h1>
@@ -55,7 +65,10 @@ export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   );
 }
 
-export function PrimaryButton({ children, ...rest }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+export function PrimaryButton({
+  children,
+  ...rest
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       {...rest}

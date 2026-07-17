@@ -9,12 +9,8 @@ import {
   SectionHeader,
 } from "@/components/shell/Cards";
 import { useI18n } from "@/i18n/I18nProvider";
-import {
-  useBrands,
-  useCategories,
-  useCurrentUser,
-  useProducts,
-} from "@/data-access";
+import { useBrands, useCategories, useCurrentUser, useProducts } from "@/data-access";
+import { useCapabilities } from "@/platform/useCapabilities";
 
 export const Route = createFileRoute("/home")({
   component: Home,
@@ -26,14 +22,24 @@ function Home() {
   const { data: categories = [] } = useCategories();
   const { data: brands = [] } = useBrands();
   const { data: user } = useCurrentUser();
+  const { isEnabled } = useCapabilities();
 
   const featured = products
     .filter((p) => p.tags?.includes("bestseller") || p.tags?.includes("new"))
     .slice(0, 8);
   const offers = products.filter((p) => p.compareAt).slice(0, 8);
-  const topups = products.filter((p) => p.kind === "direct_topup").slice(0, 8);
-  const gifts = products.filter((p) => p.kind === "gift_card").slice(0, 8);
+  const topups = isEnabled("directGameTopUpEnabled")
+    ? products.filter((p) => p.kind === "direct_topup").slice(0, 8)
+    : [];
+  const gifts = isEnabled("giftCardPurchaseEnabled")
+    ? products.filter((p) => p.kind === "gift_card").slice(0, 8)
+    : [];
   const firstName = user?.displayName.split(" ")[0] ?? "Ahmad";
+  const visibleCategories = categories.filter((c) => {
+    if (c.id === "top-ups") return isEnabled("directGameTopUpEnabled");
+    if (c.id === "gift-cards") return isEnabled("giftCardPurchaseEnabled");
+    return true;
+  });
 
   return (
     <MobileScreen>
@@ -75,7 +81,7 @@ function Home() {
 
         <SectionHeader title={t("browseCategories")} to="/categories" />
         <HScroll>
-          {categories.slice(0, 8).map((c) => (
+          {visibleCategories.slice(0, 8).map((c) => (
             <div key={c.id} className="w-24 shrink-0">
               <CategoryTile cat={c} />
             </div>
@@ -89,19 +95,27 @@ function Home() {
           ))}
         </HScroll>
 
-        <SectionHeader title={t("giftCards")} to="/categories/gift-cards" />
-        <HScroll>
-          {gifts.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </HScroll>
+        {gifts.length > 0 && (
+          <>
+            <SectionHeader title={t("giftCards")} to="/categories/gift-cards" />
+            <HScroll>
+              {gifts.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </HScroll>
+          </>
+        )}
 
-        <SectionHeader title={t("topUps")} to="/categories/top-ups" />
-        <HScroll>
-          {topups.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </HScroll>
+        {topups.length > 0 && (
+          <>
+            <SectionHeader title={t("topUps")} to="/categories/top-ups" />
+            <HScroll>
+              {topups.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </HScroll>
+          </>
+        )}
 
         {offers.length > 0 && (
           <>

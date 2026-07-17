@@ -1,5 +1,7 @@
 import type { Order } from "@/domain/order";
+import { withDerivedDisplayStatus } from "@/domain/order";
 import type { Notification } from "@/domain/notification";
+import { scenarioOrders } from "./order-scenarios";
 
 export type { OrderDisplayStatus as OrderStatus } from "@/domain/order";
 export type { Notification as NotificationItem } from "@/domain/notification";
@@ -7,15 +9,15 @@ export type { Notification as NotificationItem } from "@/domain/notification";
 const now = Date.now();
 const daysAgo = (d: number) => new Date(now - d * 86400_000).toISOString();
 
-export const orders: Order[] = [
-  {
+/** Primary catalog of customer-facing seed orders (plus all lifecycle scenarios). */
+const seedOrders: Order[] = [
+  withDerivedDisplayStatus({
     id: "NTR-2810391",
     quoteId: "Q-NTR-2810391",
     createdAt: daysAgo(1),
-    paymentStatus: "paid",
+    paymentStatus: "captured",
     fulfillmentStatus: "fulfilled",
-    refundStatus: "not_requested",
-    displayStatus: "completed",
+    refundStatus: "none",
     items: [
       {
         id: "NTR-2810391-1",
@@ -34,27 +36,30 @@ export const orders: Order[] = [
     paymentCurrency: "SAR",
     paymentMethod: "Mada •• 4421",
     events: [
-      { displayStatus: "processing", note: { en: "Order placed", ar: "تم الطلب" }, at: daysAgo(1) },
       {
-        displayStatus: "processing",
-        note: { en: "Payment received", ar: "تم استلام الدفع" },
+        displayStatus: "payment_confirmed",
+        note: { en: "Payment captured", ar: "تم تحصيل الدفع" },
         at: daysAgo(1),
       },
       {
-        displayStatus: "completed",
+        displayStatus: "fulfillment_processing",
+        note: { en: "Fulfillment started", ar: "بدأ التنفيذ" },
+        at: daysAgo(1),
+      },
+      {
+        displayStatus: "fulfilled",
         note: { en: "Code delivered", ar: "تم تسليم الكود" },
         at: daysAgo(1),
       },
     ],
-  },
-  {
+  }),
+  withDerivedDisplayStatus({
     id: "NTR-2810127",
     quoteId: "Q-NTR-2810127",
     createdAt: daysAgo(3),
-    paymentStatus: "paid",
+    paymentStatus: "captured",
     fulfillmentStatus: "fulfilled",
-    refundStatus: "not_requested",
-    displayStatus: "completed",
+    refundStatus: "none",
     items: [
       {
         id: "NTR-2810127-1",
@@ -74,22 +79,25 @@ export const orders: Order[] = [
     paymentCurrency: "SAR",
     paymentMethod: "Apple Pay",
     events: [
-      { displayStatus: "processing", note: { en: "Order placed", ar: "تم الطلب" }, at: daysAgo(3) },
       {
-        displayStatus: "completed",
+        displayStatus: "payment_confirmed",
+        note: { en: "Payment captured", ar: "تم تحصيل الدفع" },
+        at: daysAgo(3),
+      },
+      {
+        displayStatus: "fulfilled",
         note: { en: "Top-up delivered", ar: "تم الشحن" },
         at: daysAgo(3),
       },
     ],
-  },
-  {
+  }),
+  withDerivedDisplayStatus({
     id: "NTR-2809912",
     quoteId: "Q-NTR-2809912",
     createdAt: daysAgo(5),
-    paymentStatus: "paid",
+    paymentStatus: "captured",
     fulfillmentStatus: "manual_review",
-    refundStatus: "not_requested",
-    displayStatus: "processing",
+    refundStatus: "none",
     items: [
       {
         id: "NTR-2809912-1",
@@ -107,22 +115,25 @@ export const orders: Order[] = [
     paymentCurrency: "SAR",
     paymentMethod: "Visa •• 8871",
     events: [
-      { displayStatus: "processing", note: { en: "Order placed", ar: "تم الطلب" }, at: daysAgo(5) },
       {
-        displayStatus: "processing",
+        displayStatus: "payment_confirmed",
+        note: { en: "Payment captured", ar: "تم تحصيل الدفع" },
+        at: daysAgo(5),
+      },
+      {
+        displayStatus: "manual_review",
         note: { en: "Under review", ar: "قيد المراجعة" },
         at: daysAgo(5),
       },
     ],
-  },
-  {
+  }),
+  withDerivedDisplayStatus({
     id: "NTR-2807711",
     quoteId: "Q-NTR-2807711",
     createdAt: daysAgo(9),
     paymentStatus: "failed",
     fulfillmentStatus: "not_started",
-    refundStatus: "not_requested",
-    displayStatus: "failed",
+    refundStatus: "none",
     items: [
       {
         id: "NTR-2807711-1",
@@ -140,11 +151,27 @@ export const orders: Order[] = [
     paymentCurrency: "SAR",
     paymentMethod: "STC Pay",
     events: [
-      { displayStatus: "processing", note: { en: "Order placed", ar: "تم الطلب" }, at: daysAgo(9) },
-      { displayStatus: "failed", note: { en: "Payment failed", ar: "فشل الدفع" }, at: daysAgo(9) },
+      {
+        displayStatus: "payment_processing",
+        note: { en: "Payment started", ar: "بدأ الدفع" },
+        at: daysAgo(9),
+      },
+      {
+        displayStatus: "cancelled",
+        note: { en: "Payment failed", ar: "فشل الدفع" },
+        at: daysAgo(9),
+      },
     ],
-  },
+  }),
 ];
+
+/** Deduplicate by id — scenarios override seeds when ids collide (they don't). */
+export const orders: Order[] = (() => {
+  const map = new Map<string, Order>();
+  for (const o of seedOrders) map.set(o.id, o);
+  for (const o of scenarioOrders) map.set(o.id, o);
+  return [...map.values()];
+})();
 
 export const notifications: Notification[] = [
   {

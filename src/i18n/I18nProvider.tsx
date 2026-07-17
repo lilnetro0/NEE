@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -7,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { dictionaries, type Locale, type TranslationKey } from "./dictionaries";
+import { usePlatform } from "@/platform/PlatformProvider";
 
 type Ctx = {
   locale: Locale;
@@ -21,19 +23,24 @@ const I18nContext = createContext<Ctx | null>(null);
 const STORAGE_KEY = "netro:locale";
 
 function useHydratedLocale(): [Locale, (l: Locale) => void] {
+  const { preferences } = usePlatform();
   const [locale, setLocaleState] = useState<Locale>("en");
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY) as Locale | null;
-      if (stored === "en" || stored === "ar") setLocaleState(stored);
-    } catch {}
-  }, []);
-  const setLocale = (l: Locale) => {
-    setLocaleState(l);
-    try {
-      localStorage.setItem(STORAGE_KEY, l);
-    } catch {}
-  };
+    let active = true;
+    void preferences.get(STORAGE_KEY).then((stored) => {
+      if (active && (stored === "en" || stored === "ar")) setLocaleState(stored);
+    });
+    return () => {
+      active = false;
+    };
+  }, [preferences]);
+  const setLocale = useCallback(
+    (l: Locale) => {
+      setLocaleState(l);
+      void preferences.set(STORAGE_KEY, l);
+    },
+    [preferences],
+  );
   return [locale, setLocale];
 }
 
@@ -66,7 +73,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         }
       },
     }),
-    [locale, dir],
+    [locale, dir, setLocale],
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

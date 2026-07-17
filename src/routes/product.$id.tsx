@@ -6,6 +6,8 @@ import { ProductArt, ProductCard, SectionHeader, HScroll } from "@/components/sh
 import { useProduct, useProducts } from "@/data-access";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useStore } from "@/store/StoreProvider";
+import { useCapabilities } from "@/platform/useCapabilities";
+import { CapabilityDisabledPanel } from "@/platform/CapabilityDisabled";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +22,9 @@ function ProductPage() {
   const { locale, t, formatPrice } = useI18n();
   const { add, isFavorite, toggleFavorite } = useStore();
   const nav = useNavigate();
+  const { canPurchase, isEnabled } = useCapabilities(
+    product?.kind === "direct_topup" ? "direct_topup" : product ? "gift_card" : undefined,
+  );
 
   const [tab, setTab] = useState<"desc" | "redeem" | "reviews">("desc");
   const [denominationId, setDenominationId] = useState<string | undefined>();
@@ -71,8 +76,24 @@ function ProductPage() {
     .slice(0, 6);
 
   const isTopUp = product.kind === "direct_topup";
+  const purchaseAllowed = canPurchase(isTopUp ? "direct_topup" : "gift_card");
+  const blockedCapability = !isEnabled("purchasingEnabled")
+    ? ("purchasingEnabled" as const)
+    : isTopUp
+      ? ("directGameTopUpEnabled" as const)
+      : ("giftCardPurchaseEnabled" as const);
 
   const startBuy = (buyNow = false) => {
+    if (!purchaseAllowed) {
+      toast.error(
+        isTopUp
+          ? t("topUpUnavailable")
+          : !isEnabled("purchasingEnabled")
+            ? t("purchasingUnavailable")
+            : t("giftCardUnavailable"),
+      );
+      return;
+    }
     if (isTopUp) {
       nav({
         to: "/product/$id/topup",
@@ -325,26 +346,34 @@ function ProductPage() {
 
       {/* Sticky bottom action */}
       <div className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t glass px-4 pt-3">
-        <div className="mb-2 flex items-baseline justify-between">
-          <span className="text-xs text-muted-foreground">{t("total")}</span>
-          <span className="font-display text-xl font-black text-brand">
-            {formatPrice(total, product.displayCurrency)}
-          </span>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => startBuy(false)}
-            className="h-14 flex-1 rounded-full border-2 border-brand text-sm font-bold text-brand active:scale-95"
-          >
-            {t("addToCart")}
-          </button>
-          <button
-            onClick={() => startBuy(true)}
-            className="h-14 flex-1 rounded-full gradient-brand text-sm font-bold text-brand-foreground shadow-elevated active:scale-95"
-          >
-            {t("buyNow")}
-          </button>
-        </div>
+        {!purchaseAllowed ? (
+          <div className="pb-2">
+            <CapabilityDisabledPanel capability={blockedCapability} />
+          </div>
+        ) : (
+          <>
+            <div className="mb-2 flex items-baseline justify-between">
+              <span className="text-xs text-muted-foreground">{t("total")}</span>
+              <span className="font-display text-xl font-black text-brand">
+                {formatPrice(total, product.displayCurrency)}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => startBuy(false)}
+                className="h-14 flex-1 rounded-full border-2 border-brand text-sm font-bold text-brand active:scale-95"
+              >
+                {t("addToCart")}
+              </button>
+              <button
+                onClick={() => startBuy(true)}
+                className="h-14 flex-1 rounded-full gradient-brand text-sm font-bold text-brand-foreground shadow-elevated active:scale-95"
+              >
+                {t("buyNow")}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </MobileScreen>
   );

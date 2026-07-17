@@ -15,12 +15,22 @@ function Profile() {
       <TopBar title={t("profile")} showBack showCart={false} />
       <ScreenBody className="space-y-4">
         <div className="flex items-center gap-4">
-          <div className="grid h-20 w-20 place-items-center rounded-3xl gradient-brand font-black text-brand-foreground">A</div>
-          <button className="rounded-full bg-surface px-4 py-2 text-xs font-semibold">Change photo</button>
+          <div className="grid h-20 w-20 place-items-center rounded-3xl gradient-brand font-black text-brand-foreground">
+            A
+          </div>
+          <button className="rounded-full bg-surface px-4 py-2 text-xs font-semibold">
+            Change photo
+          </button>
         </div>
-        <Field label={t("fullName")}><TextInput defaultValue="Ahmad Al-Sayed" /></Field>
-        <Field label={t("email")}><TextInput type="email" defaultValue="ahmad@example.com" /></Field>
-        <Field label={t("phone")}><TextInput type="tel" defaultValue="+9665 555 5555" /></Field>
+        <Field label={t("fullName")}>
+          <TextInput defaultValue="Ahmad Al-Sayed" />
+        </Field>
+        <Field label={t("email")}>
+          <TextInput type="email" defaultValue="ahmad@example.com" />
+        </Field>
+        <Field label={t("phone")}>
+          <TextInput type="tel" defaultValue="+9665 555 5555" />
+        </Field>
         <PrimaryButton onClick={() => toast.success("Saved")}>{t("save")}</PrimaryButton>
       </ScreenBody>
     </MobileScreen>

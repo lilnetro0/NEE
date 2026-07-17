@@ -28,9 +28,7 @@ function BrandPage() {
               {brand.logo || brand.name.slice(0, 1)}
             </div>
             <div className="mt-3 font-display text-2xl font-black">{brand.name}</div>
-            <p className="mt-1 text-sm text-white/80">
-              {list.length} products · Instant delivery
-            </p>
+            <p className="mt-1 text-sm text-white/80">{list.length} products · Instant delivery</p>
           </div>
         )}
         {list.length ? (

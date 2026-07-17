@@ -34,8 +34,17 @@ function Appearance() {
               style={{ background: o.id === "dark" ? "#12141f" : "#f8fafc" }}
             >
               <Icon className={cn("h-6 w-6", o.id === "dark" ? "text-brand-glow" : "text-brand")} />
-              <div className={cn("font-display text-lg font-bold", o.id === "dark" ? "text-white" : "text-slate-900")}>{o.label}</div>
-              {active && <Check className="absolute right-3 top-3 h-5 w-5 rounded-full bg-brand p-1 text-brand-foreground" />}
+              <div
+                className={cn(
+                  "font-display text-lg font-bold",
+                  o.id === "dark" ? "text-white" : "text-slate-900",
+                )}
+              >
+                {o.label}
+              </div>
+              {active && (
+                <Check className="absolute right-3 top-3 h-5 w-5 rounded-full bg-brand p-1 text-brand-foreground" />
+              )}
             </button>
           );
         })}

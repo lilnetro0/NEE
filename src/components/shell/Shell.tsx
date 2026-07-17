@@ -1,5 +1,16 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { Home, LayoutGrid, Search, Package, User, Bell, ChevronLeft, ChevronRight, ShoppingBag, Heart } from "lucide-react";
+import {
+  Home,
+  LayoutGrid,
+  Search,
+  Package,
+  User,
+  Bell,
+  ChevronLeft,
+  ChevronRight,
+  ShoppingBag,
+  Heart,
+} from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useStore } from "@/store/StoreProvider";
 import { cn } from "@/lib/utils";
@@ -53,18 +64,27 @@ export function TopBar({
       <div className="flex shrink-0 items-center gap-1.5">
         {right}
         {showFav && (
-          <Link to="/favorites" className="grid h-10 w-10 place-items-center rounded-full bg-surface active:scale-95">
+          <Link
+            to="/favorites"
+            className="grid h-10 w-10 place-items-center rounded-full bg-surface active:scale-95"
+          >
             <Heart className="h-5 w-5" />
           </Link>
         )}
         {showNotif && (
-          <Link to="/notifications" className="relative grid h-10 w-10 place-items-center rounded-full bg-surface active:scale-95">
+          <Link
+            to="/notifications"
+            className="relative grid h-10 w-10 place-items-center rounded-full bg-surface active:scale-95"
+          >
             <Bell className="h-5 w-5" />
             <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-brand" />
           </Link>
         )}
         {showCart && (
-          <Link to="/cart" className="relative grid h-10 w-10 place-items-center rounded-full bg-surface active:scale-95">
+          <Link
+            to="/cart"
+            className="relative grid h-10 w-10 place-items-center rounded-full bg-surface active:scale-95"
+          >
             <ShoppingBag className="h-5 w-5" />
             {count > 0 && (
               <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand px-1 text-[10px] font-bold text-brand-foreground">

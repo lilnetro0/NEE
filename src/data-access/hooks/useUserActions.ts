@@ -1,25 +1,23 @@
 import { useCallback } from "react";
 import { useRepositories } from "../RepositoriesProvider";
 
+/** Account / session actions via AuthRepository (not UserRepository). */
 export function useUserActions() {
-  const { users } = useRepositories();
+  const { auth } = useRepositories();
   return {
-    reauth: useCallback((password: string) => users.reauth(password), [users]),
-    listSessions: useCallback(
-      (signal?: AbortSignal) => users.listSessions({ signal }),
-      [users],
+    reauth: useCallback((password: string) => auth.reauth(password), [auth]),
+    listSessions: useCallback((signal?: AbortSignal) => auth.listSessions({ signal }), [auth]),
+    revokeSession: useCallback((id: string) => auth.revokeSession(id), [auth]),
+    deleteAccount: useCallback((password: string) => auth.deleteAccount(password), [auth]),
+    requestEmailChange: useCallback((email: string) => auth.requestEmailChange(email), [auth]),
+    verifyEmailChange: useCallback(
+      (challengeId: string, code: string) => auth.verifyEmailChange({ challengeId, code }),
+      [auth],
     ),
-    revokeSession: useCallback((id: string) => users.revokeSession(id), [users]),
-    deleteAccount: useCallback((password: string) => users.deleteAccount(password), [users]),
-    requestEmailChange: useCallback(
-      (email: string) => users.requestEmailChange(email),
-      [users],
+    requestPhoneChange: useCallback((phone: string) => auth.requestPhoneChange(phone), [auth]),
+    verifyPhoneChange: useCallback(
+      (challengeId: string, code: string) => auth.verifyPhoneChange({ challengeId, code }),
+      [auth],
     ),
-    verifyEmailChange: useCallback((code: string) => users.verifyEmailChange(code), [users]),
-    requestPhoneChange: useCallback(
-      (phone: string) => users.requestPhoneChange(phone),
-      [users],
-    ),
-    verifyPhoneChange: useCallback((code: string) => users.verifyPhoneChange(code), [users]),
   };
 }

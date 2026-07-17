@@ -1,16 +1,9 @@
-import {
-  brands,
-  categories,
-  products,
-} from "@/data/catalog";
+import { brands, categories, products } from "@/data/catalog";
 import type { AccountVerification } from "@/domain/product";
 import type { FieldValues } from "@/domain/forms";
 import type { RequestOptions } from "../options";
 import { notFoundError, ok, type Result } from "../result";
-import type {
-  ProductListParams,
-  ProductRepository,
-} from "../repositories/product-repository";
+import type { ProductListParams, ProductRepository } from "../repositories/product-repository";
 import { withMockLatency } from "./delay";
 
 export function createMockProductRepository(): ProductRepository {
@@ -86,22 +79,58 @@ export function createMockProductRepository(): ProductRepository {
       options?: RequestOptions,
     ): Promise<Result<AccountVerification>> {
       return withMockLatency(
-        400,
+        600,
         (): Result<AccountVerification> => {
-          if (!Object.values(values).some((v) => v && v.trim())) {
+          // Mock only — no supplier/backend is contacted. The primary account
+          // identifier drives a deterministic outcome so all UI states can be
+          // exercised: last digit 0 → not found, 9 → temporarily unavailable.
+          const primary = (values.playerId ?? values.userId ?? "").trim();
+
+          if (!primary) {
             return ok<AccountVerification>({
               ok: false,
               reason: "invalid_input",
               message: {
-                en: "Please fill required fields",
-                ar: "يرجى ملء الحقول المطلوبة",
+                en: "Please fill the required account fields",
+                ar: "يرجى ملء حقول الحساب المطلوبة",
               },
             });
           }
+
+          const lastDigit = primary.slice(-1);
+
+          if (lastDigit === "9") {
+            return ok<AccountVerification>({
+              ok: false,
+              reason: "temporarily_unavailable",
+              message: {
+                en: "Account lookup is temporarily unavailable. You can still continue.",
+                ar: "خدمة التحقق من الحساب غير متاحة مؤقتاً. يمكنك المتابعة.",
+              },
+            });
+          }
+
+          if (lastDigit === "0") {
+            return ok<AccountVerification>({
+              ok: false,
+              reason: "account_not_found",
+              message: {
+                en: "No account found for this ID. Please check and try again.",
+                ar: "لم يتم العثور على حساب لهذا المعرّف. تحقق وحاول مرة أخرى.",
+              },
+            });
+          }
+
+          const serverLabel = values.server
+            ? values.server.charAt(0).toUpperCase() + values.server.slice(1)
+            : values.state
+              ? values.state.replace("state-", "State #")
+              : "Asia";
+
           return ok<AccountVerification>({
             ok: true,
-            nickname: "NetroPlayer",
-            server: values.server ?? "Asia",
+            nickname: `Netro${primary.slice(-4).padStart(4, "0")}`,
+            server: serverLabel,
             region: "Global",
           });
         },

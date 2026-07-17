@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
+import { usePlatform } from "@/platform/PlatformProvider";
 
 export const Route = createFileRoute("/")({
   component: Splash,
@@ -9,15 +10,21 @@ export const Route = createFileRoute("/")({
 function Splash() {
   const nav = useNavigate();
   const { t } = useI18n();
-  const [seen, setSeen] = useState<string | null>(null);
+  const { preferences } = usePlatform();
+  const [seen, setSeen] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
-    try {
-      setSeen(localStorage.getItem("netro:onboarded"));
-    } catch {}
-  }, []);
+    let active = true;
+    void preferences.get("netro:onboarded").then((value) => {
+      if (active) setSeen(value);
+    });
+    return () => {
+      active = false;
+    };
+  }, [preferences]);
 
   useEffect(() => {
+    if (seen === undefined) return;
     const t = setTimeout(() => {
       if (seen === "1") nav({ to: "/home" });
       else nav({ to: "/onboarding" });

@@ -1,6 +1,6 @@
 import type { CurrencyCode } from "@/domain/common";
 import type { Brand, Category } from "@/domain/catalog";
-import type { FieldSchema } from "@/domain/forms";
+import type { DynamicTopUpField } from "@/domain/forms";
 import type { DirectTopUpProduct, GiftCardProduct, Product } from "@/domain/product";
 
 export type { Brand, Category } from "@/domain/catalog";
@@ -275,6 +275,29 @@ const productSeeds: ProductSeed[] = [
     redeem: { en: "Delivered to your account.", ar: "يتم الشحن إلى حسابك." },
   }),
   P({
+    id: "whiteout-fc",
+    brandId: "whiteout",
+    categoryId: "mobile",
+    title: { en: "Whiteout Survival Firecrystals", ar: "بلورات نار وايت آوت سرفايفل" },
+    platform: "Whiteout Survival",
+    price: 5,
+    color: "#3a6ea5",
+    requiresPlayerId: true,
+    requiresServer: true,
+    tags: ["new"],
+    packages: [
+      { id: "wos-100", label: "100 🔥", amount: 100, price: 5 },
+      { id: "wos-520", label: "520 🔥", amount: 520, price: 22 },
+      { id: "wos-1060", label: "1060 🔥", amount: 1060, price: 42 },
+      { id: "wos-2200", label: "2200 🔥", amount: 2200, price: 82 },
+    ],
+    description: {
+      en: "Direct top-up. Player ID + State required.",
+      ar: "شحن مباشر. مطلوب معرّف اللاعب والولاية.",
+    },
+    redeem: { en: "Delivered to your State.", ar: "يتم الشحن إلى ولايتك." },
+  }),
+  P({
     id: "genshin-crystals",
     brandId: "genshin",
     categoryId: "mobile",
@@ -418,41 +441,235 @@ export function findCategory(id: string) {
   return categories.find((c) => c.id === id);
 }
 
-function topUpFieldsFor(p: ProductSeed): FieldSchema[] {
-  const fields: FieldSchema[] = [];
-  if (p.requiresPlayerId) {
-    fields.push({
-      kind: "text",
-      id: "playerId",
+/**
+ * Per-game field schemas. These are mock configurations only — no supplier or
+ * backend is contacted. IDs, servers/zones and codes are forced LTR so they
+ * render correctly in Arabic mode.
+ */
+const TOP_UP_FIELD_SCHEMAS: Record<string, DynamicTopUpField[]> = {
+  "pubg-uc": [
+    {
+      type: "numeric_text",
+      key: "playerId",
       label: { en: "Player ID", ar: "معرّف اللاعب" },
-      placeholder: { en: "Enter your Player ID", ar: "أدخل معرّف اللاعب" },
-      helpText: { en: "Numbers only", ar: "أرقام فقط" },
+      placeholder: { en: "e.g. 5123456789", ar: "مثال: 5123456789" },
+      helpText: {
+        en: "Open PUBG Mobile → tap your profile to find your numeric ID.",
+        ar: "افتح ببجي موبايل ← اضغط على ملفك الشخصي لإيجاد المعرّف الرقمي.",
+      },
       required: true,
-      ltr: true,
-      numericOnly: true,
+      direction: "ltr",
+      normalization: { digitsOnly: true, trim: true },
       validation: {
-        pattern: "[0-9]{5,15}",
+        pattern: "[0-9]{8,12}",
         errorMessage: {
-          en: "Player ID must be 5–15 digits",
-          ar: "يجب أن يكون معرّف اللاعب بين 5 و15 رقماً",
+          en: "Player ID must be 8–12 digits",
+          ar: "يجب أن يكون معرّف اللاعب بين 8 و12 رقماً",
         },
       },
-    });
-  }
-  if (p.requiresServer) {
-    fields.push({
-      kind: "select",
-      id: "server",
-      label: { en: "Server", ar: "السيرفر" },
+    },
+    {
+      type: "info",
+      key: "pubg-note",
+      tone: "info",
+      label: { en: "How delivery works", ar: "كيف يتم الشحن" },
+      body: {
+        en: "UC is credited directly to the Player ID above. Double-check it before paying.",
+        ar: "تُضاف الشدات مباشرة إلى معرّف اللاعب أعلاه. تأكد منه قبل الدفع.",
+      },
+    },
+  ],
+  "freefire-diamonds": [
+    {
+      type: "numeric_text",
+      key: "playerId",
+      label: { en: "Player ID", ar: "معرّف اللاعب" },
+      placeholder: { en: "e.g. 123456789", ar: "مثال: 123456789" },
+      helpText: {
+        en: "Your Free Fire numeric UID shown on your profile.",
+        ar: "معرّف فري فاير الرقمي الظاهر في ملفك الشخصي.",
+      },
       required: true,
+      direction: "ltr",
+      normalization: { digitsOnly: true, trim: true },
+      validation: {
+        pattern: "[0-9]{6,12}",
+        errorMessage: {
+          en: "Player ID must be 6–12 digits",
+          ar: "يجب أن يكون معرّف اللاعب بين 6 و12 رقماً",
+        },
+      },
+    },
+    {
+      type: "text",
+      key: "nicknameHint",
+      label: { en: "In-game nickname (optional)", ar: "الاسم داخل اللعبة (اختياري)" },
+      placeholder: { en: "Helps us confirm the account", ar: "يساعدنا في تأكيد الحساب" },
+      required: false,
+      direction: "ltr",
+      keyboard: "default",
+      normalization: { trim: true },
+      validation: {
+        maxLength: 24,
+        errorMessage: { en: "Max 24 characters", ar: "الحد الأقصى 24 حرفاً" },
+      },
+    },
+  ],
+  "mlbb-diamonds": [
+    {
+      type: "numeric_text",
+      key: "playerId",
+      label: { en: "User ID", ar: "معرّف المستخدم" },
+      placeholder: { en: "e.g. 123456789", ar: "مثال: 123456789" },
+      helpText: {
+        en: "Shown in Profile as the first number.",
+        ar: "يظهر في الملف الشخصي كأول رقم.",
+      },
+      required: true,
+      direction: "ltr",
+      normalization: { digitsOnly: true, trim: true },
+      validation: {
+        pattern: "[0-9]{6,12}",
+        errorMessage: {
+          en: "User ID must be 6–12 digits",
+          ar: "يجب أن يكون معرّف المستخدم بين 6 و12 رقماً",
+        },
+      },
+    },
+    {
+      type: "numeric_text",
+      key: "zoneId",
+      label: { en: "Zone ID", ar: "معرّف المنطقة" },
+      placeholder: { en: "e.g. 1234", ar: "مثال: 1234" },
+      helpText: {
+        en: "The number shown in parentheses after your User ID.",
+        ar: "الرقم الظاهر بين قوسين بعد معرّف المستخدم.",
+      },
+      required: true,
+      direction: "ltr",
+      normalization: { digitsOnly: true, trim: true },
+      validation: {
+        pattern: "[0-9]{3,6}",
+        errorMessage: {
+          en: "Zone ID must be 3–6 digits",
+          ar: "يجب أن يكون معرّف المنطقة بين 3 و6 أرقام",
+        },
+      },
+    },
+    {
+      type: "select",
+      key: "server",
+      label: { en: "Server region", ar: "منطقة السيرفر" },
+      required: true,
+      direction: "ltr",
       options: [
         { value: "asia", label: { en: "Asia", ar: "آسيا" } },
+        { value: "sea", label: { en: "Southeast Asia", ar: "جنوب شرق آسيا" } },
+        { value: "mena", label: { en: "MENA", ar: "الشرق الأوسط" } },
         { value: "europe", label: { en: "Europe", ar: "أوروبا" } },
         { value: "america", label: { en: "America", ar: "أمريكا" } },
-        { value: "sea", label: { en: "Southeast Asia", ar: "جنوب شرق آسيا" } },
       ],
-    });
-  }
+    },
+  ],
+  "whiteout-fc": [
+    {
+      type: "numeric_text",
+      key: "playerId",
+      label: { en: "Player ID", ar: "معرّف اللاعب" },
+      placeholder: { en: "e.g. 98765432", ar: "مثال: 98765432" },
+      helpText: {
+        en: "Tap your avatar → the ID is listed under your name.",
+        ar: "اضغط على صورتك ← يظهر المعرّف أسفل اسمك.",
+      },
+      required: true,
+      direction: "ltr",
+      normalization: { digitsOnly: true, trim: true },
+      validation: {
+        pattern: "[0-9]{6,14}",
+        errorMessage: {
+          en: "Player ID must be 6–14 digits",
+          ar: "يجب أن يكون معرّف اللاعب بين 6 و14 رقماً",
+        },
+      },
+    },
+    {
+      type: "searchable_select",
+      key: "state",
+      label: { en: "State (server)", ar: "الولاية (السيرفر)" },
+      required: true,
+      direction: "ltr",
+      searchPlaceholder: { en: "Search state number...", ar: "ابحث برقم الولاية..." },
+      options: Array.from({ length: 20 }, (_, i) => {
+        const n = i + 1;
+        return {
+          value: `state-${n}`,
+          label: { en: `State #${n}`, ar: `الولاية #${n}` },
+          keywords: [`${n}`, `state ${n}`, `s${n}`],
+        };
+      }),
+    },
+    {
+      type: "radio",
+      key: "platform",
+      label: { en: "Platform", ar: "المنصة" },
+      required: true,
+      options: [
+        { value: "ios", label: { en: "iOS", ar: "iOS" } },
+        { value: "android", label: { en: "Android", ar: "أندرويد" } },
+      ],
+    },
+    {
+      type: "info",
+      key: "whiteout-note",
+      tone: "warning",
+      label: { en: "Check your State", ar: "تحقق من الولاية" },
+      body: {
+        en: "Resources are delivered to the selected State. A wrong State cannot be refunded.",
+        ar: "تُسلَّم الموارد إلى الولاية المختارة. لا يمكن استرداد ولاية خاطئة.",
+      },
+    },
+  ],
+};
+
+const PLAYER_ID_FIELD: DynamicTopUpField = {
+  type: "numeric_text",
+  key: "playerId",
+  label: { en: "Player ID", ar: "معرّف اللاعب" },
+  placeholder: { en: "Enter your Player ID", ar: "أدخل معرّف اللاعب" },
+  helpText: { en: "Numbers only", ar: "أرقام فقط" },
+  required: true,
+  direction: "ltr",
+  normalization: { digitsOnly: true, trim: true },
+  validation: {
+    pattern: "[0-9]{5,15}",
+    errorMessage: {
+      en: "Player ID must be 5–15 digits",
+      ar: "يجب أن يكون معرّف اللاعب بين 5 و15 رقماً",
+    },
+  },
+};
+
+const SERVER_FIELD: DynamicTopUpField = {
+  type: "select",
+  key: "server",
+  label: { en: "Server", ar: "السيرفر" },
+  required: true,
+  direction: "ltr",
+  options: [
+    { value: "asia", label: { en: "Asia", ar: "آسيا" } },
+    { value: "europe", label: { en: "Europe", ar: "أوروبا" } },
+    { value: "america", label: { en: "America", ar: "أمريكا" } },
+    { value: "sea", label: { en: "Southeast Asia", ar: "جنوب شرق آسيا" } },
+  ],
+};
+
+function topUpFieldsFor(p: ProductSeed): DynamicTopUpField[] {
+  const explicit = TOP_UP_FIELD_SCHEMAS[p.id];
+  if (explicit) return explicit;
+
+  const fields: DynamicTopUpField[] = [];
+  if (p.requiresPlayerId) fields.push(PLAYER_ID_FIELD);
+  if (p.requiresServer) fields.push(SERVER_FIELD);
   return fields;
 }
 

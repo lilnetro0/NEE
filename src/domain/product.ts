@@ -89,3 +89,13 @@ export type AccountVerification =
       reason: "account_not_found" | "region_mismatch" | "temporarily_unavailable" | "invalid_input";
       message: Localized;
     };
+
+/**
+ * UI state machine for optional account lookup on top-up screens.
+ *  - idle:        no lookup attempted yet
+ *  - validating:  lookup in flight
+ *  - valid:       account found; confirmation card shown
+ *  - invalid:     account not found / bad input
+ *  - unavailable: lookup service temporarily unreachable (does not block purchase)
+ */
+export type AccountValidationState = "idle" | "validating" | "valid" | "invalid" | "unavailable";

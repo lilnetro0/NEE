@@ -5,6 +5,8 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { CreditProvider, useStoreCredit } from "@/store/CreditProvider";
 import { AsyncState } from "@/components/common/AsyncState";
 import { Bidi } from "@/components/common/Bidi";
+import { useCapabilities } from "@/platform/useCapabilities";
+import { CapabilityDisabledScreen } from "@/platform/CapabilityDisabled";
 import type { CreditTxn } from "@/domain/order";
 
 export const Route = createFileRoute("/wallet")({
@@ -16,13 +18,18 @@ export const Route = createFileRoute("/wallet")({
 });
 
 function StoreCreditScreen() {
-  const { locale, t, formatPrice } = useI18n();
+  const { locale, formatPrice } = useI18n();
   const isAr = locale === "ar";
   const { status, credit, refresh } = useStoreCredit();
+  const { isEnabled } = useCapabilities();
+
+  if (!isEnabled("storeCreditEnabled")) {
+    return <CapabilityDisabledScreen capability="storeCreditEnabled" />;
+  }
 
   return (
     <MobileScreen>
-      <TopBar title={isAr ? "رصيد المتجر" : "Store Credit"} showBack />
+      <TopBar title={isAr ? "رصيد متجر NETRO" : "NETRO Store Credit"} showBack />
       <ScreenBody>
         <AsyncState
           status={status === "ready" && credit ? "ready" : status === "error" ? "error" : "loading"}
@@ -34,7 +41,8 @@ function StoreCreditScreen() {
               <div className="relative overflow-hidden rounded-3xl gradient-hero p-6 text-white shadow-elevated">
                 <div className="pointer-events-none absolute -end-8 -top-6 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
                 <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-white/70">
-                  <WalletIcon className="h-4 w-4" /> {isAr ? "رصيد NETRO" : "NETRO Credit"}
+                  <WalletIcon className="h-4 w-4" />{" "}
+                  {isAr ? "رصيد متجر NETRO" : "NETRO Store Credit"}
                 </div>
                 <div className="mt-3 font-display text-4xl font-black">
                   <Bidi>{formatPrice(c.balance, c.currency)}</Bidi>
@@ -48,10 +56,12 @@ function StoreCreditScreen() {
                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <p>
                   {isAr
-                    ? "رصيد NETRO يُمنح كاسترداد أو ترويج. لا يمكن إيداعه أو سحبه أو تحويله إلى مستخدم آخر."
-                    : "NETRO Credit is granted as refunds or promotional credit. It cannot be deposited, withdrawn, or transferred."}
+                    ? "رصيد متجر NETRO يُمنح كاسترداد أو ترويج فقط. لا يمكن إيداعه أو سحبه أو تحويله."
+                    : "NETRO Store Credit is issued as refunds or promotional credit only. It cannot be deposited, withdrawn, or transferred."}
                 </p>
               </div>
+
+              {/* walletFundingEnabled is permanently off in local config — no deposit/withdraw CTAs. */}
 
               <h3 className="mb-2 mt-6 font-display text-sm font-bold uppercase tracking-widest text-muted-foreground">
                 {isAr ? "المعاملات" : "Transactions"}
@@ -69,7 +79,6 @@ function StoreCreditScreen() {
                 </div>
               )}
               <div className="pb-6" />
-              <button type="button" onClick={() => t("retry")} className="hidden">.</button>
             </>
           )}
         </AsyncState>
@@ -82,10 +91,22 @@ function TxnRow({ txn }: { txn: CreditTxn }) {
   const { locale, formatPrice } = useI18n();
   const isAr = locale === "ar";
   const positive = txn.amount > 0;
-  const icon = txn.kind === "promo_credit" ? <Gift className="h-4 w-4" /> : positive ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />;
+  const icon =
+    txn.kind === "promo_credit" ? (
+      <Gift className="h-4 w-4" />
+    ) : positive ? (
+      <ArrowDownLeft className="h-4 w-4" />
+    ) : (
+      <ArrowUpRight className="h-4 w-4" />
+    );
   return (
     <div className="flex items-center gap-3 rounded-2xl bg-card p-3">
-      <div className={"grid h-10 w-10 place-items-center rounded-xl " + (positive ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive")}>
+      <div
+        className={
+          "grid h-10 w-10 place-items-center rounded-xl " +
+          (positive ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive")
+        }
+      >
         {icon}
       </div>
       <div className="min-w-0 flex-1">

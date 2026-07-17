@@ -45,7 +45,7 @@ export function AsyncState<T>({
         <p className="text-sm text-muted-foreground">
           {typeof error === "string"
             ? error
-            : error?.message ?? (isAr ? "حدث خطأ ما" : "Something went wrong")}
+            : (error?.message ?? (isAr ? "حدث خطأ ما" : "Something went wrong"))}
         </p>
         {onRetry && (
           <button
@@ -63,10 +63,11 @@ export function AsyncState<T>({
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
         {emptyIcon ?? <Inbox className="h-8 w-8" aria-hidden />}
-        <p className="text-sm">{emptyLabel ?? (isAr ? "لا يوجد شيء هنا بعد" : "Nothing here yet")}</p>
+        <p className="text-sm">
+          {emptyLabel ?? (isAr ? "لا يوجد شيء هنا بعد" : "Nothing here yet")}
+        </p>
       </div>
     );
   }
   return <>{data !== undefined ? children(data) : null}</>;
 }
-

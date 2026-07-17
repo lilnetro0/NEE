@@ -17,13 +17,8 @@ export function Bidi({
 }: HTMLAttributes<HTMLElement> & { as?: keyof HTMLElementTagNameMap }) {
   const Tag = as as unknown as ElementType;
   return (
-    <Tag
-      dir="ltr"
-      className={`inline-block [unicode-bidi:isolate] ${className ?? ""}`}
-      {...rest}
-    >
+    <Tag dir="ltr" className={`inline-block [unicode-bidi:isolate] ${className ?? ""}`} {...rest}>
       {children}
     </Tag>
   );
 }
-

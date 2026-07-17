@@ -1,13 +1,24 @@
 import { useCallback } from "react";
-import type { OrderDisplayStatus } from "@/domain/order";
+import type { OrderDisplayStatus, OrderListBucket } from "@/domain/order";
 import { useRepositories } from "../RepositoriesProvider";
 import { useResultQuery } from "./useResultQuery";
 
-export function useOrders(displayStatus?: OrderDisplayStatus) {
+export function useOrders(filter?: OrderDisplayStatus | OrderListBucket | "all") {
   const { orders } = useRepositories();
+  const isBucket =
+    filter === "processing" ||
+    filter === "completed" ||
+    filter === "failed" ||
+    filter === "refunded" ||
+    filter === "cancelled";
+
   return useResultQuery(
-    (signal) => orders.list(displayStatus ? { displayStatus } : undefined, { signal }),
-    [orders, displayStatus],
+    (signal) => {
+      if (!filter || filter === "all") return orders.list(undefined, { signal });
+      if (isBucket) return orders.list({ bucket: filter }, { signal });
+      return orders.list({ displayStatus: filter }, { signal });
+    },
+    [orders, filter],
   );
 }
 
@@ -20,10 +31,8 @@ export function useOrderMutations() {
   const { orders } = useRepositories();
   return {
     create: useCallback(
-      (
-        input: Parameters<typeof orders.create>[0],
-        options?: Parameters<typeof orders.create>[1],
-      ) => orders.create(input, options),
+      (input: Parameters<typeof orders.create>[0], options?: Parameters<typeof orders.create>[1]) =>
+        orders.create(input, options),
       [orders],
     ),
     createQuote: useCallback(
@@ -39,8 +48,7 @@ export function useOrderMutations() {
       [orders],
     ),
     pollFulfillment: useCallback(
-      (orderId: string, signal?: AbortSignal) =>
-        orders.pollFulfillment(orderId, { signal }),
+      (orderId: string, signal?: AbortSignal) => orders.pollFulfillment(orderId, { signal }),
       [orders],
     ),
   };

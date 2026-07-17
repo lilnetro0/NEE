@@ -41,7 +41,9 @@ export function CreditProvider({ children }: { children: ReactNode }) {
     return cancel;
   }, [load]);
 
-  return <Ctx.Provider value={{ status, credit, refresh: () => void load() }}>{children}</Ctx.Provider>;
+  return (
+    <Ctx.Provider value={{ status, credit, refresh: () => void load() }}>{children}</Ctx.Provider>
+  );
 }
 
 export function useStoreCredit() {

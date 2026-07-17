@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { preferences } from "@/platform/adapters";
 import { CART_POLICY } from "@/platform/capabilities";
+import { usePlatform } from "@/platform/PlatformProvider";
 import type { CartItem } from "@/domain/cart";
 import type { CurrencyCode } from "@/domain/common";
 
@@ -97,39 +97,49 @@ function isCartItem(value: unknown): value is CartItem {
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
+  const { preferences } = usePlatform();
   const [items, setItems] = useState<CartItem[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    try {
-      const c = preferences.get(CART_KEY);
-      const f = preferences.get(FAV_KEY);
-      if (c) {
-        const parsed: unknown = JSON.parse(c);
-        if (Array.isArray(parsed)) setItems(parsed.filter(isCartItem));
-      }
-      if (f) {
-        const parsed: unknown = JSON.parse(f);
-        if (Array.isArray(parsed)) {
-          setFavorites(parsed.filter((id): id is string => typeof id === "string"));
+    let active = true;
+    void (async () => {
+      try {
+        const [cart, favoritesValue] = await Promise.all([
+          preferences.get(CART_KEY),
+          preferences.get(FAV_KEY),
+        ]);
+        if (!active) return;
+        if (cart) {
+          const parsed: unknown = JSON.parse(cart);
+          if (Array.isArray(parsed)) setItems(parsed.filter(isCartItem));
         }
+        if (favoritesValue) {
+          const parsed: unknown = JSON.parse(favoritesValue);
+          if (Array.isArray(parsed)) {
+            setFavorites(parsed.filter((id): id is string => typeof id === "string"));
+          }
+        }
+      } catch {
+        // Invalid persisted state is replaced after hydration.
+      } finally {
+        if (active) setHydrated(true);
       }
-    } catch {
-      // Invalid persisted state is replaced after hydration.
-    } finally {
-      setHydrated(true);
-    }
-  }, []);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [preferences]);
 
   useEffect(() => {
     if (!hydrated) return;
-    preferences.set(CART_KEY, JSON.stringify(items));
-  }, [hydrated, items]);
+    void preferences.set(CART_KEY, JSON.stringify(items));
+  }, [hydrated, items, preferences]);
   useEffect(() => {
     if (!hydrated) return;
-    preferences.set(FAV_KEY, JSON.stringify(favorites));
-  }, [favorites, hydrated]);
+    void preferences.set(FAV_KEY, JSON.stringify(favorites));
+  }, [favorites, hydrated, preferences]);
 
   const value = useMemo<Ctx>(() => {
     const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);

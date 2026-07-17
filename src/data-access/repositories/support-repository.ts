@@ -4,4 +4,6 @@ import type { Result } from "../result";
 
 export type SupportRepository = {
   submit(ticket: NewSupportTicket, options?: RequestOptions): Promise<Result<SupportTicket>>;
+  list(options?: RequestOptions): Promise<Result<SupportTicket[]>>;
+  getById(id: string, options?: RequestOptions): Promise<Result<SupportTicket>>;
 };

@@ -5,6 +5,8 @@ export type AppErrorCode =
   | "unauthorized"
   | "conflict"
   | "unavailable"
+  | "rate_limited"
+  | "network"
   | "unknown";
 
 export type AppError = {

@@ -4,6 +4,8 @@ import { Trash2, Minus, Plus, ShoppingBag, Ticket } from "lucide-react";
 import { MobileScreen, TopBar, ScreenBody } from "@/components/shell/Shell";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useStore } from "@/store/StoreProvider";
+import { useCapabilities } from "@/platform/useCapabilities";
+import { CapabilityDisabledPanel } from "@/platform/CapabilityDisabled";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/cart")({
@@ -16,6 +18,9 @@ function Cart() {
   const [promo, setPromo] = useState("");
   const [discount, setDiscount] = useState(0);
   const nav = useNavigate();
+  const { isEnabled } = useCapabilities();
+  const purchasingEnabled = isEnabled("purchasingEnabled");
+  const promotionsEnabled = isEnabled("promotionsEnabled");
 
   const vat = (subtotal - discount) * 0.15;
   const total = subtotal - discount + vat;
@@ -103,30 +108,36 @@ function Cart() {
           ))}
         </div>
 
-        <div className="mt-5 flex gap-2">
-          <div className="flex flex-1 items-center gap-2 rounded-2xl border border-input bg-surface px-3">
-            <Ticket className="h-4 w-4 text-muted-foreground" />
-            <input
-              value={promo}
-              onChange={(e) => setPromo(e.target.value)}
-              placeholder={t("promoCode")}
-              className="h-12 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            />
+        {promotionsEnabled ? (
+          <div className="mt-5 flex gap-2">
+            <div className="flex flex-1 items-center gap-2 rounded-2xl border border-input bg-surface px-3">
+              <Ticket className="h-4 w-4 text-muted-foreground" />
+              <input
+                value={promo}
+                onChange={(e) => setPromo(e.target.value)}
+                placeholder={t("promoCode")}
+                className="h-12 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+            <button
+              onClick={() => {
+                if (promo.trim().toUpperCase() === "NETRO10") {
+                  setDiscount(subtotal * 0.1);
+                  toast.success("Promo applied: 10% off");
+                } else {
+                  toast.error("Invalid code");
+                }
+              }}
+              className="rounded-full bg-surface px-5 text-sm font-bold"
+            >
+              {t("apply")}
+            </button>
           </div>
-          <button
-            onClick={() => {
-              if (promo.trim().toUpperCase() === "NETRO10") {
-                setDiscount(subtotal * 0.1);
-                toast.success("Promo applied: 10% off");
-              } else {
-                toast.error("Invalid code");
-              }
-            }}
-            className="rounded-full bg-surface px-5 text-sm font-bold"
-          >
-            {t("apply")}
-          </button>
-        </div>
+        ) : (
+          <p className="mt-5 rounded-2xl bg-surface px-4 py-3 text-center text-sm text-muted-foreground">
+            {t("promotionsUnavailable")}
+          </p>
+        )}
 
         <div className="mt-5 space-y-2 rounded-2xl bg-surface p-4 text-sm">
           <Row label={t("subtotal")} value={formatPrice(subtotal)} />
@@ -140,12 +151,18 @@ function Cart() {
       </ScreenBody>
 
       <div className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t glass px-4 pt-3">
-        <button
-          onClick={() => nav({ to: "/checkout" })}
-          className="h-14 w-full rounded-full gradient-brand text-sm font-bold text-brand-foreground shadow-elevated"
-        >
-          {t("checkout")} · {formatPrice(total)}
-        </button>
+        {purchasingEnabled ? (
+          <button
+            onClick={() => nav({ to: "/checkout" })}
+            className="h-14 w-full rounded-full gradient-brand text-sm font-bold text-brand-foreground shadow-elevated"
+          >
+            {t("checkout")} · {formatPrice(total)}
+          </button>
+        ) : (
+          <div className="pb-2">
+            <CapabilityDisabledPanel capability="purchasingEnabled" />
+          </div>
+        )}
       </div>
     </MobileScreen>
   );

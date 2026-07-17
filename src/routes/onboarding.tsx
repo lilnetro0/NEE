@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Gift, Zap, ShieldCheck, Globe } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
+import { usePlatform } from "@/platform/PlatformProvider";
 
 export const Route = createFileRoute("/onboarding")({
   component: Onboarding,
@@ -11,6 +12,7 @@ export const Route = createFileRoute("/onboarding")({
 function Onboarding() {
   const { t, locale, setLocale } = useI18n();
   const nav = useNavigate();
+  const { preferences } = usePlatform();
   const [step, setStep] = useState(0);
 
   const slides = [
@@ -19,8 +21,8 @@ function Onboarding() {
     { icon: ShieldCheck, title: t("ob3_t"), desc: t("ob3_d"), color: "from-violet to-brand" },
   ];
 
-  const finish = () => {
-    try { localStorage.setItem("netro:onboarded", "1"); } catch {}
+  const finish = async () => {
+    await preferences.set("netro:onboarded", "1");
     nav({ to: "/auth/login" });
   };
 
@@ -43,7 +45,12 @@ function Onboarding() {
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <div className={cn("mb-10 grid h-40 w-40 place-items-center rounded-[40px] bg-gradient-to-br text-white shadow-elevated", slide.color)}>
+        <div
+          className={cn(
+            "mb-10 grid h-40 w-40 place-items-center rounded-[40px] bg-gradient-to-br text-white shadow-elevated",
+            slide.color,
+          )}
+        >
           <Icon className="h-20 w-20" strokeWidth={1.6} />
         </div>
         <h1 className="font-display text-3xl font-black leading-tight">{slide.title}</h1>

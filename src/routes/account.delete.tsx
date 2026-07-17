@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { MobileScreen, TopBar, ScreenBody } from "@/components/shell/Shell";
 import { useI18n } from "@/i18n/I18nProvider";
+import { useAuth } from "@/auth/AuthProvider";
 import { useUserActions } from "@/data-access";
 import { toast } from "sonner";
 
@@ -11,13 +12,23 @@ export const Route = createFileRoute("/account/delete")({
 });
 
 function DeleteAccount() {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const isAr = locale === "ar";
   const nav = useNavigate();
+  const authUi = useAuth();
   const { deleteAccount } = useUserActions();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    void (async () => {
+      const token = await authUi.getReauthToken();
+      if (!token) {
+        nav({ to: "/reauth", search: { redirect: "/account/delete" } });
+      }
+    })();
+  }, [authUi, nav]);
 
   const canSubmit = password.length >= 6 && confirm === "DELETE";
 
@@ -30,6 +41,7 @@ function DeleteAccount() {
         toast.error(isAr ? "فشل الحذف" : "Deletion failed");
         return;
       }
+      await authUi.logout();
       toast.success(isAr ? "تم حذف الحساب" : "Account deleted");
       nav({ to: "/auth/login" });
     } catch {
@@ -77,11 +89,18 @@ function DeleteAccount() {
         />
 
         <button
-          onClick={submit}
+          type="button"
+          onClick={() => void submit()}
           disabled={!canSubmit || busy}
           className="mt-8 h-14 w-full rounded-full bg-destructive text-sm font-bold text-destructive-foreground disabled:opacity-40"
         >
-          {busy ? (isAr ? "جاري الحذف..." : "Deleting...") : isAr ? "حذف حسابي نهائياً" : "Delete my account"}
+          {busy
+            ? isAr
+              ? "جاري الحذف..."
+              : "Deleting..."
+            : isAr
+              ? "حذف حسابي نهائياً"
+              : "Delete my account"}
         </button>
       </ScreenBody>
     </MobileScreen>

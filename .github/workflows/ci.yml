@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  production-readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm run test
+
+      - name: Production build
+        env:
+          VITE_APP_ENV: production
+          VITE_USE_MOCKS: "false"
+          VITE_API_BASE_URL: https://api.example.netro.app
+          VITE_ENABLE_DEV_TOOLS: "false"
+          VITE_APP_VERSION: ${{ github.sha }}
+          VITE_BUILD_SHA: ${{ github.sha }}
+        run: npm run build

@@ -1,4 +1,5 @@
 import type { Repositories } from "../repositories";
+import { createMockAuthRepository } from "./mock-auth-repository";
 import { createMockNotificationRepository } from "./mock-notification-repository";
 import { createMockOrderRepository } from "./mock-order-repository";
 import { createMockProductRepository } from "./mock-product-repository";
@@ -15,6 +16,7 @@ export function createMockRepositories(): Repositories {
     products: createMockProductRepository(),
     orders: createMockOrderRepository(),
     users: createMockUserRepository(),
+    auth: createMockAuthRepository(),
     notifications: createMockNotificationRepository(),
     support: createMockSupportRepository(),
     promotions: createMockPromotionRepository(),

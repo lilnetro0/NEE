@@ -1,157 +1,309 @@
-import { useState } from "react";
-import { validateAll, type FieldSchema, type FieldValues, type FieldError } from "@/domain/forms";
-import type { AccountVerification } from "@/domain/product";
+import { useMemo, useState } from "react";
+import { ChevronDown, Info, AlertTriangle, Check, Search } from "lucide-react";
+import {
+  isInputField,
+  normalizeOnBlur,
+  normalizeOnInput,
+  validateField,
+  type DynamicTopUpField,
+  type FieldValues,
+  type InputDirection,
+  type KeyboardType,
+  type SearchableSelectField,
+} from "@/domain/forms";
 import { useI18n } from "@/i18n/I18nProvider";
+import { cn } from "@/lib/utils";
 
 type Props = {
-  schemas: FieldSchema[];
-  value: FieldValues;
+  fields: DynamicTopUpField[];
+  values: FieldValues;
   onChange: (values: FieldValues) => void;
-  /** Optional pre-checkout verification result to preview. */
-  verification?: AccountVerification | null;
-  onVerify?: () => Promise<void> | void;
-  verifying?: boolean;
-  showVerifyButton?: boolean;
 };
 
+const INPUT_CLASS =
+  "w-full rounded-2xl border border-input bg-surface px-4 py-3 text-sm outline-none focus:border-brand";
+
+function inputModeFor(
+  keyboard: KeyboardType | undefined,
+): React.HTMLAttributes<HTMLInputElement>["inputMode"] {
+  switch (keyboard) {
+    case "numeric":
+      return "numeric";
+    case "email":
+      return "email";
+    case "tel":
+      return "tel";
+    case "url":
+      return "url";
+    default:
+      return undefined;
+  }
+}
+
+function dirAttr(direction: InputDirection | undefined): "ltr" | "rtl" | undefined {
+  return direction && direction !== "auto" ? direction : undefined;
+}
+
 /**
- * Schema-driven form renderer. Reads FieldSchema[] and produces controlled
- * inputs. Emits FieldValues on every change. Validation is exposed via the
- * returned <field-level> messages after a validate() call.
+ * Schema-driven renderer. Supports text, numeric text, select, searchable
+ * select, radio and informational fields. Applies normalization on input and
+ * validates on blur; all messages are localized.
  */
-export function DynamicForm({
-  schemas,
-  value,
-  onChange,
-  verification,
-  onVerify,
-  verifying,
-  showVerifyButton,
-}: Props) {
+export function DynamicForm({ fields, values, onChange }: Props) {
   const { locale } = useI18n();
-  const [errors, setErrors] = useState<FieldError[]>([]);
   const isAr = locale === "ar";
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const set = (id: string, v: string) => {
-    onChange({ ...value, [id]: v });
-    setErrors((es) => es.filter((e) => e.id !== id));
+  const setValue = (field: DynamicTopUpField, raw: string) => {
+    onChange({ ...values, [field.key]: normalizeOnInput(field, raw) });
   };
 
-  const runValidate = () => {
-    const es = validateAll(schemas, value);
-    setErrors(es);
-    return es.length === 0;
+  const blurField = (field: DynamicTopUpField) => {
+    setTouched((prev) => ({ ...prev, [field.key]: true }));
+    const normalized = normalizeOnBlur(field, values[field.key] ?? "");
+    if (normalized !== (values[field.key] ?? "")) {
+      onChange({ ...values, [field.key]: normalized });
+    }
   };
 
-  const errFor = (id: string) => errors.find((e) => e.id === id);
+  const selectOption = (field: DynamicTopUpField, value: string) => {
+    setTouched((prev) => ({ ...prev, [field.key]: true }));
+    onChange({ ...values, [field.key]: value });
+  };
 
   return (
     <div className="space-y-4">
-      {schemas.map((s) => {
-        const err = errFor(s.id);
-        const label = isAr ? s.label.ar : s.label.en;
-        const help = s.kind !== "select" && s.helpText ? (isAr ? s.helpText.ar : s.helpText.en) : null;
+      {fields.map((field) => {
+        if (field.type === "info") {
+          return <InfoBlock key={field.key} field={field} isAr={isAr} />;
+        }
+
+        const error = touched[field.key] ? validateField(field, values[field.key]) : null;
+        const label = isAr ? field.label.ar : field.label.en;
+        const help =
+          "helpText" in field && field.helpText
+            ? isAr
+              ? field.helpText.ar
+              : field.helpText.en
+            : null;
 
         return (
-          <div key={s.id}>
-            <label htmlFor={s.id} className="mb-1.5 block text-sm font-medium">
+          <div key={field.key}>
+            <label htmlFor={field.key} className="mb-1.5 block text-sm font-medium">
               {label}
-              {s.required && <span className="ms-1 text-destructive">*</span>}
+              {field.required && <span className="ms-1 text-destructive">*</span>}
             </label>
 
-            {s.kind === "select" ? (
-              <select
-                id={s.id}
-                value={value[s.id] ?? ""}
-                onChange={(e) => set(s.id, e.target.value)}
-                className="w-full rounded-2xl border border-border bg-secondary/50 px-4 py-3 text-sm outline-none focus:border-primary"
-              >
-                <option value="" disabled>
-                  {isAr ? "اختر..." : "Choose..."}
-                </option>
-                {s.options.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {isAr ? o.label.ar : o.label.en}
-                  </option>
-                ))}
-              </select>
-            ) : (
+            {(field.type === "text" || field.type === "numeric_text") && (
               <input
-                id={s.id}
-                type={s.kind === "number" ? "number" : "text"}
+                id={field.key}
+                type="text"
                 inputMode={
-                  s.kind === "number" || (s.kind === "text" && s.numericOnly)
+                  field.type === "numeric_text"
                     ? "numeric"
-                    : undefined
+                    : inputModeFor(field.type === "text" ? field.keyboard : undefined)
                 }
-                dir={s.kind === "text" && s.ltr ? "ltr" : undefined}
+                dir={dirAttr(field.direction)}
                 placeholder={
-                  s.placeholder
-                    ? isAr ? s.placeholder.ar : s.placeholder.en
+                  field.placeholder
+                    ? isAr
+                      ? field.placeholder.ar
+                      : field.placeholder.en
                     : undefined
                 }
-
-                value={value[s.id] ?? ""}
-                onChange={(e) => set(s.id, e.target.value)}
-                className="w-full rounded-2xl border border-border bg-secondary/50 px-4 py-3 text-sm outline-none focus:border-primary"
+                value={values[field.key] ?? ""}
+                onChange={(e) => setValue(field, e.target.value)}
+                onBlur={() => blurField(field)}
+                className={INPUT_CLASS}
               />
             )}
 
-            {help && !err && <p className="mt-1 text-xs text-muted-foreground">{help}</p>}
-            {err && (
+            {field.type === "select" && (
+              <div className="relative">
+                <select
+                  id={field.key}
+                  value={values[field.key] ?? ""}
+                  onChange={(e) => selectOption(field, e.target.value)}
+                  onBlur={() => blurField(field)}
+                  dir={dirAttr(field.direction)}
+                  className={cn(INPUT_CLASS, "appearance-none pe-10")}
+                >
+                  <option value="" disabled>
+                    {isAr ? "اختر..." : "Choose..."}
+                  </option>
+                  {field.options.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {isAr ? o.label.ar : o.label.en}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              </div>
+            )}
+
+            {field.type === "searchable_select" && (
+              <SearchableSelect
+                field={field}
+                value={values[field.key] ?? ""}
+                onSelect={(v) => selectOption(field, v)}
+                isAr={isAr}
+              />
+            )}
+
+            {field.type === "radio" && (
+              <div className="grid grid-cols-2 gap-2">
+                {field.options.map((o) => {
+                  const active = values[field.key] === o.value;
+                  return (
+                    <button
+                      key={o.value}
+                      type="button"
+                      onClick={() => selectOption(field, o.value)}
+                      className={cn(
+                        "flex items-center justify-between rounded-2xl border-2 px-4 py-3 text-sm font-semibold",
+                        active ? "border-brand bg-brand/10 text-brand" : "border-input bg-surface",
+                      )}
+                    >
+                      {isAr ? o.label.ar : o.label.en}
+                      {active && <Check className="h-4 w-4" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {help && !error && <p className="mt-1 text-xs text-muted-foreground">{help}</p>}
+            {error && (
               <p className="mt-1 text-xs text-destructive" role="alert">
-                {isAr ? err.message.ar : err.message.en}
+                {isAr ? error.message.ar : error.message.en}
               </p>
             )}
           </div>
         );
       })}
-
-      {showVerifyButton && (
-        <button
-          type="button"
-          onClick={async () => {
-            if (runValidate()) await onVerify?.();
-          }}
-          disabled={verifying}
-          className="w-full rounded-2xl border border-primary/40 bg-primary/10 py-3 text-sm font-semibold text-primary disabled:opacity-60"
-        >
-          {verifying
-            ? isAr ? "جاري التحقق..." : "Verifying..."
-            : isAr ? "تحقق من الحساب" : "Verify account"}
-        </button>
-      )}
-
-      {verification && verification.ok && (
-        <div className="rounded-2xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm">
-          <p className="font-semibold text-green-500">
-            {isAr ? "تم التحقق من الحساب" : "Account verified"}
-          </p>
-          {verification.nickname && (
-            <p className="mt-1 text-muted-foreground">
-              {isAr ? "الاسم: " : "Nickname: "}
-              <span dir="ltr" className="font-medium text-foreground">{verification.nickname}</span>
-            </p>
-          )}
-          {verification.server && (
-            <p className="text-muted-foreground">
-              {isAr ? "السيرفر: " : "Server: "}
-              <span dir="ltr" className="font-medium text-foreground">{verification.server}</span>
-            </p>
-          )}
-        </div>
-      )}
-
-      {verification && !verification.ok && (
-        <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {isAr ? verification.message.ar : verification.message.en}
-        </div>
-      )}
     </div>
   );
 }
 
-/** Exposes `validate()` to parents via ref-like callback. Keep it simple. */
-export function useDynamicFormValidation(schemas: FieldSchema[], values: FieldValues) {
-  return () => validateAll(schemas, values);
+function InfoBlock({
+  field,
+  isAr,
+}: {
+  field: Extract<DynamicTopUpField, { type: "info" }>;
+  isAr: boolean;
+}) {
+  const warning = field.tone === "warning";
+  const Icon = warning ? AlertTriangle : Info;
+  return (
+    <div
+      className={cn(
+        "flex items-start gap-2 rounded-2xl border p-3 text-xs leading-relaxed",
+        warning
+          ? "border-warning/30 bg-warning/10 text-foreground/80"
+          : "border-primary/20 bg-primary/5 text-muted-foreground",
+      )}
+    >
+      <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", warning ? "text-warning" : "text-primary")} />
+      <div>
+        <b className="text-sm text-foreground">{isAr ? field.label.ar : field.label.en}</b>
+        <p className="mt-0.5">{isAr ? field.body.ar : field.body.en}</p>
+      </div>
+    </div>
+  );
+}
+
+function SearchableSelect({
+  field,
+  value,
+  onSelect,
+  isAr,
+}: {
+  field: SearchableSelectField;
+  value: string;
+  onSelect: (value: string) => void;
+  isAr: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const selected = field.options.find((o) => o.value === value);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return field.options;
+    return field.options.filter((o) => {
+      const label = `${o.label.en} ${o.label.ar}`.toLowerCase();
+      const keywords = (o.keywords ?? []).join(" ").toLowerCase();
+      return label.includes(q) || keywords.includes(q) || o.value.toLowerCase().includes(q);
+    });
+  }, [field.options, query]);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={cn(INPUT_CLASS, "flex items-center justify-between text-start")}
+      >
+        <span className={selected ? "" : "text-muted-foreground"}>
+          {selected
+            ? isAr
+              ? selected.label.ar
+              : selected.label.en
+            : isAr
+              ? "ابحث واختر..."
+              : "Search and select..."}
+        </span>
+        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+      </button>
+
+      {open && (
+        <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-2xl border border-border bg-card shadow-elevated">
+          <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={
+                field.searchPlaceholder
+                  ? isAr
+                    ? field.searchPlaceholder.ar
+                    : field.searchPlaceholder.en
+                  : isAr
+                    ? "بحث..."
+                    : "Search..."
+              }
+              className="flex-1 bg-transparent text-sm outline-none"
+            />
+          </div>
+          <div className="max-h-52 overflow-auto">
+            {filtered.length === 0 ? (
+              <p className="px-4 py-3 text-center text-xs text-muted-foreground">
+                {isAr ? "لا توجد نتائج" : "No results"}
+              </p>
+            ) : (
+              filtered.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => {
+                    onSelect(o.value);
+                    setOpen(false);
+                    setQuery("");
+                  }}
+                  className={cn(
+                    "flex w-full items-center justify-between px-4 py-2.5 text-start text-sm hover:bg-surface",
+                    o.value === value && "text-brand",
+                  )}
+                >
+                  {isAr ? o.label.ar : o.label.en}
+                  {o.value === value && <Check className="h-4 w-4" />}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
