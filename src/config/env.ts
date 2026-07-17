@@ -31,8 +31,23 @@ export class EnvConfigError extends Error {
   }
 }
 
+/**
+ * Vite only statically replaces *literal* `import.meta.env.VITE_*` access in
+ * production builds. Dynamic `import.meta.env[key]` is always undefined after
+ * `vite build`, which breaks Cloudflare / Codemagic even when vars are set.
+ */
 function readRaw(key: string): string | undefined {
-  const value = (import.meta.env as Record<string, string | boolean | undefined>)[key];
+  const env = import.meta.env;
+  const table: Record<string, string | boolean | undefined> = {
+    VITE_APP_ENV: env.VITE_APP_ENV,
+    VITE_SUPABASE_URL: env.VITE_SUPABASE_URL,
+    VITE_SUPABASE_PUBLISHABLE_KEY: env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    VITE_ENABLE_DEV_TOOLS: env.VITE_ENABLE_DEV_TOOLS,
+    VITE_SENTRY_DSN: env.VITE_SENTRY_DSN,
+    VITE_APP_VERSION: env.VITE_APP_VERSION,
+    VITE_BUILD_SHA: env.VITE_BUILD_SHA,
+  };
+  const value = table[key];
   if (value === undefined || value === null) return undefined;
   const asString = String(value).trim();
   return asString.length === 0 ? undefined : asString;
