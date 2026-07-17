@@ -65,17 +65,22 @@ export function registerSentryBridge(bridge: SentryLike | null): void {
 }
 
 function emit(level: LogLevel, message: string, context?: LogContext): void {
-  const env = getPublicEnv();
+  let env: ReturnType<typeof getPublicEnv> | null = null;
+  try {
+    env = getPublicEnv();
+  } catch {
+    // Avoid recursive boot failures when env is missing (Capacitor misconfig).
+  }
   const safe = scrubContext(context);
   const payload = {
     message,
     ...safe,
-    appVersion: env.appVersion,
-    buildSha: env.buildSha,
-    appEnv: env.appEnv,
+    appVersion: env?.appVersion ?? "unknown",
+    buildSha: env?.buildSha ?? "unknown",
+    appEnv: env?.appEnv ?? "unknown",
   };
 
-  if (!env.isViteProduction && env.appEnv === "development") {
+  if (!env?.isViteProduction && env?.appEnv === "development") {
     const fn =
       level === "debug"
         ? console.debug
@@ -88,7 +93,11 @@ function emit(level: LogLevel, message: string, context?: LogContext): void {
     return;
   }
 
-  // Production: avoid noisy console; forward errors to Sentry when configured.
+  // Always surface errors on native / when Sentry is unavailable.
+  if (level === "error") {
+    console.error(`[NETRO:error]`, message, safe ?? "");
+  }
+
   if (level === "error" && sentry) {
     sentry.captureMessage(message, "error");
     if (safe) sentry.captureException(new Error(message), { extra: payload });
@@ -104,8 +113,12 @@ export const logger = {
     const safe = scrubContext(context);
     const message = error instanceof Error ? error.message : "Unknown error";
     emit("error", message, safe);
-    if (getPublicEnv().sentryDsn && sentry) {
-      sentry.captureException(error, { extra: safe });
+    try {
+      if (getPublicEnv().sentryDsn && sentry) {
+        sentry.captureException(error, { extra: safe });
+      }
+    } catch {
+      // Env may be unavailable during early boot.
     }
   },
 };

@@ -20,6 +20,11 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // Codemagic injects release signing when a keystore is configured.
+            // Fall back to the debug keystore so CI can validate a Release build type.
+            if (System.getenv("CM_KEYSTORE_PATH") == null) {
+                signingConfig signingConfigs.debug
+            }
         }
     }
 }

@@ -9,6 +9,15 @@ export type ProductListParams = {
   brandId?: string;
   q?: string;
   ids?: string[];
+  /** Max rows to return (server-enforced). Defaults to 48. */
+  limit?: number;
+  /** Offset for pagination. Defaults to 0. */
+  offset?: number;
+  /**
+   * When true (default for list screens), skip loading denominations/packages/fields.
+   * Detail views should call getById instead.
+   */
+  summary?: boolean;
 };
 
 export type ProductRepository = {

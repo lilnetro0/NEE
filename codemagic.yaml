@@ -278,3 +278,69 @@ workflows:
     artifacts:
       - android/app/build/outputs/**/*.apk
       - android/app/build/outputs/**/*.aab
+
+  # Release AAB/APK skeleton. Wire Codemagic Android code signing in the UI
+  # (keystore + key properties) before distributing. Without signing, this
+  # still validates a Release Gradle build on CI.
+  android-release-workflow:
+    name: NETRO Android Release
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    environment:
+      groups:
+        - TEST
+      vars:
+        PACKAGE_NAME: "com.lilnetro01.talal"
+        CM_CLONE_DEPTH: 1
+      node: 22
+    scripts:
+      - name: Set Android SDK location
+        script: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Install npm dependencies
+        script: |
+          set -euo pipefail
+          npm ci --include=optional
+      - name: Verify production env (Supabase credentials)
+        script: |
+          set -euo pipefail
+          export VITE_APP_ENV="${VITE_APP_ENV:-production}"
+          export VITE_ENABLE_DEV_TOOLS="false"
+          if [ -z "${VITE_SUPABASE_URL:-}" ] || [ -z "${VITE_SUPABASE_PUBLISHABLE_KEY:-}" ]; then
+            echo "ERROR: VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY must be set in Codemagic."
+            exit 1
+          fi
+          case "${VITE_SUPABASE_URL}" in
+            *localhost*|*127.0.0.1*|*YOUR_PROJECT*)
+              echo "ERROR: VITE_SUPABASE_URL looks like a placeholder/localhost: ${VITE_SUPABASE_URL}"
+              exit 1
+              ;;
+          esac
+          echo "Production env OK"
+      - name: Build web assets
+        script: |
+          set -euo pipefail
+          export VITE_APP_ENV="${VITE_APP_ENV:-production}"
+          export VITE_ENABLE_DEV_TOOLS="false"
+          : "${VITE_SUPABASE_URL:?VITE_SUPABASE_URL is required}"
+          : "${VITE_SUPABASE_PUBLISHABLE_KEY:?VITE_SUPABASE_PUBLISHABLE_KEY is required}"
+          export VITE_APP_VERSION="${VITE_APP_VERSION:-1.0.0}"
+          export VITE_BUILD_SHA="${VITE_BUILD_SHA:-${CM_COMMIT}}"
+          npm run build
+          test -d .output/public/assets
+      - name: Prepare Capacitor web dir and sync Android
+        script: |
+          set -euo pipefail
+          npm run prepare:capacitor
+          npx cap sync android
+      - name: Build Android release bundle
+        script: |
+          set -euo pipefail
+          cd android
+          ./gradlew bundleRelease assembleRelease
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/bundle/release/*.aab
+      - android/app/build/outputs/apk/release/*.apk
+

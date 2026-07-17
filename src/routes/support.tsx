@@ -4,32 +4,18 @@ import { ChevronDown, HelpCircle, MessageCircle, Mail, PhoneCall } from "lucide-
 import { MobileScreen, TopBar, ScreenBody } from "@/components/shell/Shell";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
+import type { TranslationKey } from "@/i18n/dictionaries";
 
 export const Route = createFileRoute("/support")({
   component: Support,
 });
 
-const faqs = [
-  {
-    q: "How fast is delivery?",
-    a: "Most orders are delivered instantly to your email. Some manual reviews can take up to 15 minutes.",
-  },
-  {
-    q: "What if my code doesn't work?",
-    a: "Contact support with your order ID and a screenshot within 24 hours for a replacement.",
-  },
-  {
-    q: "Can I get a refund?",
-    a: "Unused codes are eligible for refund per our policy. Top-ups with wrong Player IDs cannot be refunded.",
-  },
-  {
-    q: "Which regions are supported?",
-    a: "We support KSA, UAE, EG, KW, QA, BH, OM, and Global codes.",
-  },
-  {
-    q: "How to redeem a gift card?",
-    a: "Each product page has step-by-step redemption instructions under 'How to redeem'.",
-  },
+const FAQ_KEYS: { q: TranslationKey; a: TranslationKey }[] = [
+  { q: "support_faq_delivery_q", a: "support_faq_delivery_a" },
+  { q: "support_faq_code_q", a: "support_faq_code_a" },
+  { q: "support_faq_refund_q", a: "support_faq_refund_a" },
+  { q: "support_faq_regions_q", a: "support_faq_regions_a" },
+  { q: "support_faq_redeem_q", a: "support_faq_redeem_a" },
 ];
 
 function Support() {
@@ -41,14 +27,15 @@ function Support() {
       <ScreenBody>
         <div className="grid grid-cols-3 gap-2">
           {[
-            { icon: MessageCircle, label: t("liveChat"), color: "brand" },
-            { icon: Mail, label: t("createTicket"), color: "violet", to: "/support/new" },
-            { icon: PhoneCall, label: "Call us", color: "cyan" },
+            { icon: MessageCircle, label: t("liveChat") },
+            { icon: Mail, label: t("createTicket"), to: "/support/new" as const },
+            { icon: PhoneCall, label: t("support_callUs") },
           ].map((c) =>
             c.to ? (
               <Link
                 key={c.label}
                 to={c.to}
+                search={{ orderId: undefined, itemId: undefined }}
                 className="flex flex-col items-center gap-2 rounded-2xl bg-card p-4 text-center"
               >
                 <div className="grid h-10 w-10 place-items-center rounded-xl bg-brand/15 text-brand">
@@ -75,13 +62,14 @@ function Support() {
           <HelpCircle className="h-4 w-4" /> {t("faq")}
         </h3>
         <div className="space-y-2">
-          {faqs.map((f, i) => (
-            <div key={i} className="overflow-hidden rounded-2xl bg-card">
+          {FAQ_KEYS.map((f, i) => (
+            <div key={f.q} className="overflow-hidden rounded-2xl bg-card">
               <button
+                type="button"
                 onClick={() => setOpen(open === i ? null : i)}
                 className="flex w-full items-center justify-between gap-3 p-4 text-left"
               >
-                <span className="text-sm font-semibold">{f.q}</span>
+                <span className="text-sm font-semibold">{t(f.q)}</span>
                 <ChevronDown
                   className={cn(
                     "h-4 w-4 shrink-0 transition-transform",
@@ -90,7 +78,9 @@ function Support() {
                 />
               </button>
               {open === i && (
-                <div className="px-4 pb-4 text-xs leading-relaxed text-muted-foreground">{f.a}</div>
+                <div className="px-4 pb-4 text-xs leading-relaxed text-muted-foreground">
+                  {t(f.a)}
+                </div>
               )}
             </div>
           ))}

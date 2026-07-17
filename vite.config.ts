@@ -11,8 +11,12 @@ export default defineConfig({
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
-    // NOTE: SPA prerender (`spa.enabled`) is intentionally off. With Nitro's `.output`
-    // layout it looks for `dist/server/server.js` and fails. Capacitor gets its
-    // index.html from `npm run prepare:capacitor` instead (see scripts/).
+    // Custom client entry: src/client.tsx (auto-resolved). Injects Capacitor SPA
+    // $_TSR bootstrap so hydrateStart does not throw "Invariant failed" on a
+    // static index.html shell.
+    //
+    // NOTE: Official SPA prerender (`spa.enabled`) is intentionally off. With
+    // Nitro's `.output` layout it looks for `dist/server/server.js` and fails.
+    // Capacitor gets index.html from `npm run prepare:capacitor` instead.
   },
 });

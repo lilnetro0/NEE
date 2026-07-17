@@ -1,10 +1,12 @@
 /**
  * Native Capacitor platform services.
  * Preferences backs secureStorage (and non-sensitive preferences) on device.
- * Other services reuse the web implementations until dedicated plugins are added.
+ * App + StatusBar plugins improve deep-link and chrome readiness on device.
  */
+import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { Preferences } from "@capacitor/preferences";
+import { StatusBar, Style } from "@capacitor/status-bar";
 import type { DeviceInformation, PlatformServices } from "../contracts";
 import { createWebPlatform } from "../web/createWebPlatform";
 import { assertNotSensitiveLocalStorageKey } from "@/lib/security";
@@ -19,10 +21,23 @@ export function isNativeRuntime(): boolean {
   }
 }
 
+async function configureNativeChrome(): Promise<void> {
+  try {
+    await StatusBar.setStyle({ style: Style.Dark });
+    if (Capacitor.getPlatform() === "android") {
+      await StatusBar.setBackgroundColor({ color: "#0B1220" });
+    }
+  } catch {
+    // StatusBar may be unavailable in some embeds; ignore.
+  }
+}
+
 export function createNativePlatform(): PlatformServices {
   const web = createWebPlatform();
   const platform: DeviceInformation["platform"] =
     Capacitor.getPlatform() === "ios" ? "ios" : "android";
+
+  void configureNativeChrome();
 
   return {
     ...web,
@@ -74,6 +89,39 @@ export function createNativePlatform(): PlatformServices {
           await Preferences.remove({ key });
         } catch {
           await web.preferences.remove(key);
+        }
+      },
+    },
+    deepLinks: {
+      async getInitialUrl() {
+        try {
+          const launch = await App.getLaunchUrl();
+          return launch?.url ?? null;
+        } catch {
+          return web.deepLinks.getInitialUrl();
+        }
+      },
+      onOpen(handler) {
+        let remove: (() => void) | undefined;
+        void App.addListener("appUrlOpen", (event) => {
+          if (event.url) handler(event.url);
+        }).then((handle) => {
+          remove = () => {
+            void handle.remove();
+          };
+        });
+        return () => {
+          remove?.();
+        };
+      },
+    },
+    appVersion: {
+      async getInfo() {
+        try {
+          const info = await App.getInfo();
+          return { version: info.version, build: info.build };
+        } catch {
+          return web.appVersion.getInfo();
         }
       },
     },

@@ -32,18 +32,22 @@ export function createSupabaseOrderRepository(): OrderRepository {
         .from("orders")
         .select("*")
         .eq("user_id", auth.user.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(50);
       if (error) return mapSupabaseError(error);
       const ids = (orders ?? []).map((o) => o.id);
       const { data: items } = await supabase
         .from("order_items")
         .select("*")
         .in("order_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+      const itemsByOrder = new Map<string, typeof items>();
+      for (const item of items ?? []) {
+        const list = itemsByOrder.get(item.order_id) ?? [];
+        list.push(item);
+        itemsByOrder.set(item.order_id, list);
+      }
       let mapped = (orders ?? []).map((order) =>
-        mapOrder(
-          order,
-          (items ?? []).filter((i) => i.order_id === order.id),
-        ),
+        mapOrder(order, itemsByOrder.get(order.id) ?? []),
       );
       if (params?.displayStatus) {
         mapped = mapped.filter((o) => o.displayStatus === params.displayStatus);

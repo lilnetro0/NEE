@@ -7,7 +7,16 @@ export function useProducts(params?: ProductListParams) {
   const { products } = useRepositories();
   return useResultQuery(
     (signal) => products.list(params, { signal }),
-    [products, params?.brandId, params?.categoryId, params?.q, params?.ids?.join(",")],
+    [
+      products,
+      params?.brandId,
+      params?.categoryId,
+      params?.q,
+      params?.ids?.join(","),
+      params?.limit,
+      params?.offset,
+      params?.summary,
+    ],
   );
 }
 

@@ -6,19 +6,31 @@ import { ProductCard } from "@/components/shell/Cards";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useProducts } from "@/data-access";
 import { usePlatform } from "@/platform/PlatformProvider";
+import { AsyncState } from "@/components/common/AsyncState";
 
 export const Route = createFileRoute("/search")({
   component: Search,
 });
 
-const trending = ["PUBG UC", "PSN 100", "Steam Wallet", "Netflix", "Free Fire", "Roblox"];
+const TRENDING = ["PUBG UC", "PSN 100", "Steam Wallet", "Netflix", "Free Fire", "Roblox"];
 
 function Search() {
   const { t } = useI18n();
   const [q, setQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
   const [recent, setRecent] = useState<string[]>([]);
-  const { data: products = [] } = useProducts();
+  const popularQuery = useProducts({ limit: 6, summary: true });
+  const searchQuery = useProducts(
+    debouncedQ.trim()
+      ? { q: debouncedQ.trim(), limit: 48, summary: true }
+      : { limit: 0, summary: true },
+  );
   const { preferences } = usePlatform();
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQ(q), 280);
+    return () => window.clearTimeout(timer);
+  }, [q]);
 
   useEffect(() => {
     let active = true;
@@ -46,14 +58,14 @@ function Search() {
     });
   };
 
-  const searchResults = q
-    ? products.filter(
-        (p) =>
-          p.title.en.toLowerCase().includes(q.toLowerCase()) ||
-          p.title.ar.includes(q) ||
-          p.brandId.includes(q.toLowerCase()),
-      )
-    : [];
+  const popular = popularQuery.data ?? [];
+  const searchResults = debouncedQ.trim() ? (searchQuery.data ?? []) : [];
+  const searching = Boolean(debouncedQ.trim());
+  const searchStatus = !searching
+    ? popularQuery.status
+    : q !== debouncedQ
+      ? "loading"
+      : searchQuery.status;
 
   return (
     <MobileScreen>
@@ -70,7 +82,7 @@ function Search() {
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
             {q && (
-              <button onClick={() => setQ("")} aria-label="Clear">
+              <button type="button" onClick={() => setQ("")} aria-label={t("clear")}>
                 <X className="h-4 w-4 text-muted-foreground" />
               </button>
             )}
@@ -86,8 +98,9 @@ function Search() {
             {recent.length > 0 && (
               <div className="mb-6">
                 <div className="mb-2 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-muted-foreground">Recent</h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground">{t("search_recent")}</h3>
                   <button
+                    type="button"
                     onClick={() => {
                       setRecent([]);
                       void preferences.remove("netro:recent-search");
@@ -101,6 +114,7 @@ function Search() {
                   {recent.map((r) => (
                     <button
                       key={r}
+                      type="button"
                       onClick={() => setQ(r)}
                       className="flex items-center gap-1.5 rounded-full bg-surface px-3 py-2 text-xs"
                     >
@@ -111,12 +125,13 @@ function Search() {
               </div>
             )}
             <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
-              <TrendingUp className="h-4 w-4" /> Trending
+              <TrendingUp className="h-4 w-4" /> {t("search_trending")}
             </h3>
             <div className="flex flex-wrap gap-2">
-              {trending.map((r) => (
+              {TRENDING.map((r) => (
                 <button
                   key={r}
+                  type="button"
                   onClick={() => setQ(r)}
                   className="rounded-full bg-surface px-3 py-2 text-xs font-medium"
                 >
@@ -124,29 +139,48 @@ function Search() {
                 </button>
               ))}
             </div>
-            <h3 className="mb-3 mt-6 font-display text-lg font-bold">Popular</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {products.slice(0, 6).map((p) => (
-                <ProductCard key={p.id} product={p} size="md" />
-              ))}
-            </div>
-          </>
-        ) : searchResults.length ? (
-          <>
-            <p className="mb-3 text-xs text-muted-foreground">{searchResults.length} results</p>
-            <div className="grid grid-cols-2 gap-3">
-              {searchResults.map((p) => (
-                <ProductCard key={p.id} product={p} size="md" />
-              ))}
-            </div>
+            <h3 className="mb-3 mt-6 font-display text-lg font-bold">{t("search_popular")}</h3>
+            <AsyncState
+              status={popularQuery.status === "empty" ? "ready" : popularQuery.status}
+              data={popular}
+              error={popularQuery.error?.message ?? null}
+              onRetry={popularQuery.reload}
+            >
+              {(items) => (
+                <div className="grid grid-cols-2 gap-3">
+                  {items.slice(0, 6).map((p) => (
+                    <ProductCard key={p.id} product={p} size="md" />
+                  ))}
+                </div>
+              )}
+            </AsyncState>
           </>
         ) : (
-          <div className="mt-20 text-center">
-            <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-surface">
-              <SearchIcon className="h-7 w-7 text-muted-foreground" />
-            </div>
-            <p className="text-sm text-muted-foreground">{t("empty_search")}</p>
-          </div>
+          <AsyncState
+            status={searchStatus === "empty" ? "empty" : searchStatus}
+            data={searchResults}
+            error={searchQuery.error?.message ?? null}
+            onRetry={searchQuery.reload}
+            emptyLabel={t("empty_search")}
+            emptyIcon={
+              <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-surface">
+                <SearchIcon className="h-7 w-7 text-muted-foreground" />
+              </div>
+            }
+          >
+            {(items) => (
+              <>
+                <p className="mb-3 text-xs text-muted-foreground">
+                  {items.length} {t("search_results")}
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {items.map((p) => (
+                    <ProductCard key={p.id} product={p} size="md" />
+                  ))}
+                </div>
+              </>
+            )}
+          </AsyncState>
         )}
       </ScreenBody>
       <BottomNav />

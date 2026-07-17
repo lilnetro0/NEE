@@ -123,9 +123,9 @@ function Cart() {
               onClick={() => {
                 if (promo.trim().toUpperCase() === "NETRO10") {
                   setDiscount(subtotal * 0.1);
-                  toast.success("Promo applied: 10% off");
+                  toast.success(t("promoApplied"));
                 } else {
-                  toast.error("Invalid code");
+                  toast.error(t("promoInvalid"));
                 }
               }}
               className="rounded-full bg-surface px-5 text-sm font-bold"

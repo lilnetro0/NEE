@@ -17,6 +17,12 @@ const config: CapacitorConfig = {
   appId: "com.lilnetro01.talal",
   appName: "NETRO",
   webDir: ".output/public",
+  plugins: {
+    StatusBar: {
+      style: "DARK",
+      backgroundColor: "#0B1220",
+    },
+  },
   ...(serverUrl
     ? {
         server: {

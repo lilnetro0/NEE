@@ -46,19 +46,41 @@ export class AppErrorBoundary extends Component<Props, State> {
     }
 
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-background px-6">
-        <div className="max-w-sm text-center">
-          <h1 className="font-display text-xl font-bold">Something went wrong</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+      <div
+        style={{
+          minHeight: "100dvh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+          boxSizing: "border-box",
+          background: "#0d0f1a",
+          color: "#f4f6fb",
+          fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
+          textAlign: "center",
+        }}
+        role="alert"
+      >
+        <div style={{ maxWidth: "22rem" }}>
+          <h1 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800 }}>Something went wrong</h1>
+          <p style={{ margin: "12px 0 0", fontSize: 14, color: "#a8b0c2", lineHeight: 1.45 }}>
             Try again in a moment. If the problem continues, contact support with this reference:
           </p>
-          <p className="mt-2 font-mono text-xs" dir="ltr">
+          <p style={{ margin: "12px 0 0", fontFamily: "ui-monospace, monospace", fontSize: 12 }} dir="ltr">
             {referenceId}
           </p>
           <button
             type="button"
             onClick={this.reset}
-            className="mt-6 rounded-full gradient-brand px-6 py-3 text-sm font-semibold text-brand-foreground"
+            style={{
+              marginTop: 20,
+              border: 0,
+              borderRadius: 999,
+              padding: "12px 20px",
+              fontWeight: 700,
+              background: "#3b82f6",
+              color: "#fff",
+            }}
           >
             Try again
           </button>
