@@ -46,3 +46,23 @@ Webhook inbox: Edge Function `supplier-webhook` writes `supplier_webhook_events`
 ## Variants
 
 Sellable SKUs remain `denominations.id` and `topup_packages.id`. Admin presents them as variants and maps suppliers on `(product_id, sku)`.
+
+## Catalog hierarchy
+
+Admin navigation models the customer hierarchy:
+
+```text
+Category → Brand → Region offering → Variants → Supplier mappings
+```
+
+- Create a canonical brand once from **Brands & regions**.
+- Add localized regions from the same page.
+- Create a regional offering under the existing brand. The product editor uses
+  controlled Brand, Category, and Region selectors.
+- The database prevents duplicate active offerings for the same
+  `(brand, kind, region)`.
+- Direct top-up account fields are managed as JSON schemas on the offering.
+- Supplier mappings remain on `(product_id, sku)` because supplier cost and
+  routing can differ by region and variant.
+
+Never create region-specific brand rows such as `Apple Saudi` or `Apple USA`.

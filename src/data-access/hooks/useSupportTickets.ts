@@ -4,12 +4,12 @@ import { useResultQuery } from "./useResultQuery";
 
 export function useSupportTickets() {
   const { support } = useRepositories();
-  return useResultQuery((signal) => support.list({ signal }), [support]);
+  return useResultQuery(["supportTickets"], (signal) => support.list({ signal }));
 }
 
 export function useSupportTicket(id: string) {
   const { support } = useRepositories();
-  return useResultQuery((signal) => support.getById(id, { signal }), [support, id]);
+  return useResultQuery(["supportTicket", id], (signal) => support.getById(id, { signal }));
 }
 
 export function useSupportMutations() {

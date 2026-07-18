@@ -43,11 +43,7 @@ function DevOperationalStates() {
     <MobileScreen>
       <TopBar title={t("operationalStates")} showBack showCart={false} />
       <ScreenBody>
-        <p className="mb-4 text-sm text-muted-foreground">
-          {isAr
-            ? "شاشات الحالات التشغيلية قبل ربط الخلفية — بدون أسماء مورّدين."
-            : "Operational status screens before backend integration — no supplier names."}
-        </p>
+        <p className="mb-4 text-sm text-muted-foreground">{t("dev_operationalStatesIntro")}</p>
         <div className="space-y-2">
           {OPERATIONAL_STATUS_LIST.map((s) => (
             <Link

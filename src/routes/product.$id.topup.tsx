@@ -14,11 +14,14 @@ import { CapabilityDisabledScreen } from "@/platform/CapabilityDisabled";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/product/$id/topup")({
+  validateSearch: (search: Record<string, unknown>): { sku?: string } =>
+    typeof search.sku === "string" ? { sku: search.sku } : {},
   component: TopUp,
 });
 
 function TopUp() {
   const { id } = Route.useParams();
+  const { sku } = Route.useSearch();
   const { data: loaded, status } = useProduct(id);
   const domainProduct = loaded && isTopUp(loaded) ? loaded : undefined;
   const verifyAccount = useVerifyAccount();
@@ -36,10 +39,14 @@ function TopUp() {
   const [confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
-    if (domainProduct) setPkgId(domainProduct.packages[0]?.id);
-  }, [domainProduct]);
+    if (domainProduct) {
+      setPkgId(
+        domainProduct.packages.some((pkg) => pkg.id === sku) ? sku : domainProduct.packages[0]?.id,
+      );
+    }
+  }, [domainProduct, sku]);
 
-  const fields = domainProduct?.requiredFields ?? [];
+  const fields = useMemo(() => domainProduct?.requiredFields ?? [], [domainProduct]);
 
   // Reset lookup whenever the account inputs change.
   const fieldSignature = useMemo(
@@ -70,9 +77,7 @@ function TopUp() {
       <MobileScreen>
         <TopBar title="Top-up" showBack />
         <div className="p-6 text-center text-sm text-muted-foreground">
-          {isAr
-            ? "هذا المنتج لا يدعم الشحن المباشر."
-            : "This product doesn't support direct top-up."}
+          {t("topup_notSupported")}
         </div>
       </MobileScreen>
     );
@@ -105,7 +110,7 @@ function TopUp() {
   const runValidation = async () => {
     if (!lookupSupported) return;
     if (!fieldsValid) {
-      toast.error(isAr ? "أكمل الحقول المطلوبة أولاً" : "Complete the required fields first");
+      toast.error(t("topup_completeFields"));
       return;
     }
     setValidationState("validating");
@@ -144,7 +149,7 @@ function TopUp() {
       fulfillmentFields: values,
     });
     if (err) {
-      toast.error(isAr ? "يُسمح بعملية شحن واحدة فقط لكل طلب في هذا الإصدار." : err.message);
+      toast.error(t("topup_onePerCheckout"));
       return;
     }
     toast.success(t("addToCart"));
@@ -158,7 +163,7 @@ function TopUp() {
         <div className="rounded-3xl border border-warning/30 bg-warning/10 p-4">
           <div className="mb-1 flex items-center gap-2 text-warning">
             <AlertTriangle className="h-4 w-4" />
-            <b className="text-sm">{isAr ? "مهم" : "Important"}</b>
+            <b className="text-sm">{t("important")}</b>
           </div>
           <p className="text-xs leading-relaxed text-foreground/80">{t("playerIdWarn")}</p>
         </div>
@@ -178,7 +183,7 @@ function TopUp() {
 
         <div>
           <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            {isAr ? "اختر الباقة" : "Select package"}
+            {t("topup_selectPackage")}
           </label>
           <div className="space-y-2">
             {domainProduct.packages.map((p) => (
@@ -207,17 +212,13 @@ function TopUp() {
               onChange={(e) => setConfirmed(e.target.checked)}
               className="mt-1 h-4 w-4 rounded"
             />
-            <span>
-              {isAr
-                ? "أؤكد أن البيانات أعلاه صحيحة. لا يمكن استرداد المبلغ عن معرّف خاطئ."
-                : "I confirm the details above are correct. Wrong IDs cannot be refunded."}
-            </span>
+            <span>{t("topup_confirmDetails")}</span>
           </label>
         )}
 
         <div className="flex items-center gap-2 rounded-2xl bg-surface p-3 text-xs text-muted-foreground">
           <ShieldCheck className="h-4 w-4 text-brand" />
-          {isAr ? "توصيل آمن وفوري" : "Secure & instant delivery"}
+          {t("topup_secureInstant")}
         </div>
       </div>
 
@@ -257,6 +258,7 @@ function AccountValidation({
   onValidate: () => void;
   isAr: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <div className="space-y-3">
       <button
@@ -268,10 +270,10 @@ function AccountValidation({
         {state === "validating" ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            {isAr ? "جاري التحقق..." : "Verifying..."}
+            {t("topup_verifying")}
           </>
         ) : (
-          <>{isAr ? "تحقق من الحساب" : "Verify account"}</>
+          <>{t("topup_verifyAccount")}</>
         )}
       </button>
 
@@ -279,11 +281,11 @@ function AccountValidation({
         <div className="rounded-2xl border border-success/30 bg-success/10 p-4 text-sm">
           <div className="flex items-center gap-2 font-semibold text-success">
             <Check className="h-4 w-4" />
-            {isAr ? "تم العثور على الحساب" : "Account found"}
+            {t("topup_accountFound")}
           </div>
           {verification.nickname && (
             <p className="mt-2 text-muted-foreground">
-              {isAr ? "الاسم: " : "Nickname: "}
+              {t("topup_nickname")}{" "}
               <span dir="ltr" className="font-medium text-foreground">
                 {verification.nickname}
               </span>
@@ -291,7 +293,7 @@ function AccountValidation({
           )}
           {verification.server && (
             <p className="text-muted-foreground">
-              {isAr ? "السيرفر: " : "Server: "}
+              {t("topup_server")}{" "}
               <span dir="ltr" className="font-medium text-foreground">
                 {verification.server}
               </span>
@@ -304,9 +306,7 @@ function AccountValidation({
               onChange={(e) => onConfirmChange(e.target.checked)}
               className="mt-0.5 h-4 w-4 rounded"
             />
-            <span>
-              {isAr ? "أؤكد أن هذا هو حسابي الصحيح." : "I confirm this is my correct account."}
-            </span>
+            <span>{t("topup_confirmAccount")}</span>
           </label>
         </div>
       )}
@@ -326,9 +326,7 @@ function AccountValidation({
               ? isAr
                 ? verification.message.ar
                 : verification.message.en
-              : isAr
-                ? "تعذّر التحقق من الحساب حالياً. يمكنك المتابعة على مسؤوليتك."
-                : "Account lookup failed for now. You can still continue at your discretion."}
+              : t("topup_lookupFailed")}
           </span>
         </div>
       )}

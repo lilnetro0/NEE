@@ -224,6 +224,17 @@ async function handleCatalog(
       if (!write()) return deny(req, "catalog.write");
       const row = payload.product as Record<string, unknown>;
       if (!row?.id) return jsonResponse({ error: "VALIDATION" }, 400, req);
+      if (!row.brand_id || !row.category_id || !row.kind) {
+        return jsonResponse(
+          { error: "VALIDATION", message: "Brand, category, and product kind are required." },
+          400,
+          req,
+        );
+      }
+      const regionId = String(row.region_id ?? row.region_code ?? "GLOBAL").toUpperCase();
+      row.region_id = regionId === "KSA" ? "SA" : regionId;
+      // Keep the legacy column populated during the dual-read window.
+      row.region_code = row.region_id;
       const { error } = await admin.from("products").upsert(row);
       if (error) return jsonResponse({ error: error.message }, 400, req);
       await writeAudit(admin, ctx.userId, "admin_upsert_product", "product", String(row.id), {
@@ -276,6 +287,44 @@ async function handleCatalog(
       await writeAudit(admin, ctx.userId, "admin_delete_package", "topup_package", id);
       return jsonResponse({ ok: true }, 200, req);
     }
+    case "upsertRequiredField": {
+      if (!write()) return deny(req, "catalog.write");
+      const row = payload.field as Record<string, unknown>;
+      if (!row.product_id || !row.field_key || !row.field_schema) {
+        return jsonResponse({ error: "VALIDATION" }, 400, req);
+      }
+      const { error } = await admin
+        .from("product_required_fields")
+        .upsert(row, { onConflict: "product_id,field_key" });
+      if (error) return jsonResponse({ error: error.message }, 400, req);
+      await writeAudit(
+        admin,
+        ctx.userId,
+        "admin_upsert_required_field",
+        "product_required_field",
+        `${String(row.product_id)}:${String(row.field_key)}`,
+      );
+      return jsonResponse({ ok: true }, 200, req);
+    }
+    case "deleteRequiredField": {
+      if (!write()) return deny(req, "catalog.write");
+      const productId = String(payload.productId ?? "");
+      const fieldKey = String(payload.fieldKey ?? "");
+      const { error } = await admin
+        .from("product_required_fields")
+        .delete()
+        .eq("product_id", productId)
+        .eq("field_key", fieldKey);
+      if (error) return jsonResponse({ error: error.message }, 400, req);
+      await writeAudit(
+        admin,
+        ctx.userId,
+        "admin_delete_required_field",
+        "product_required_field",
+        `${productId}:${fieldKey}`,
+      );
+      return jsonResponse({ ok: true }, 200, req);
+    }
     case "listCategories": {
       if (!read()) return deny(req, "catalog.read");
       const { data } = await admin.from("categories").select("*").order("sort_order");
@@ -302,12 +351,53 @@ async function handleCatalog(
       const { data } = await admin.from("brands").select("*").order("name_en");
       return jsonResponse({ items: data ?? [] }, 200, req);
     }
+    case "getBrand": {
+      if (!read()) return deny(req, "catalog.read");
+      const id = String(payload.id ?? "");
+      const [{ data: brand, error }, { data: offerings }] = await Promise.all([
+        admin.from("brands").select("*").eq("id", id).maybeSingle(),
+        admin
+          .from("products")
+          .select("*")
+          .eq("brand_id", id)
+          .order("region_id")
+          .order("kind"),
+      ]);
+      if (error) return jsonResponse({ error: error.message }, 400, req);
+      return jsonResponse({ brand, offerings: offerings ?? [] }, 200, req);
+    }
     case "upsertBrand": {
       if (!write()) return deny(req, "catalog.write");
       const row = payload.brand as Record<string, unknown>;
       const { error } = await admin.from("brands").upsert(row);
       if (error) return jsonResponse({ error: error.message }, 400, req);
       await writeAudit(admin, ctx.userId, "admin_upsert_brand", "brand", String(row.id));
+      return jsonResponse({ ok: true }, 200, req);
+    }
+    case "deleteBrand": {
+      if (!write()) return deny(req, "catalog.write");
+      const id = String(payload.id ?? "");
+      const { error } = await admin.from("brands").delete().eq("id", id);
+      if (error) return jsonResponse({ error: error.message }, 400, req);
+      await writeAudit(admin, ctx.userId, "admin_delete_brand", "brand", id);
+      return jsonResponse({ ok: true }, 200, req);
+    }
+    case "listRegions": {
+      if (!read()) return deny(req, "catalog.read");
+      const { data, error } = await admin.from("regions").select("*").order("sort_order");
+      if (error) return jsonResponse({ error: error.message }, 400, req);
+      return jsonResponse({ items: data ?? [] }, 200, req);
+    }
+    case "upsertRegion": {
+      if (!write()) return deny(req, "catalog.write");
+      const row = payload.region as Record<string, unknown>;
+      const code = String(row.code ?? "").toUpperCase();
+      if (!code || !row.name_en || !row.name_ar) {
+        return jsonResponse({ error: "VALIDATION", message: "Region names are required." }, 400, req);
+      }
+      const { error } = await admin.from("regions").upsert({ ...row, code });
+      if (error) return jsonResponse({ error: error.message }, 400, req);
+      await writeAudit(admin, ctx.userId, "admin_upsert_region", "region", code);
       return jsonResponse({ ok: true }, 200, req);
     }
     case "listVariants": {

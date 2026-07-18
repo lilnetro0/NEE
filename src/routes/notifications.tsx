@@ -5,6 +5,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { Bell, Package, Tag, Shield, LifeBuoy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AsyncState } from "@/components/common/AsyncState";
+import { ListRowsSkeleton } from "@/components/common/Skeletons";
 
 const iconFor = { order: Package, promo: Tag, security: Shield, support: LifeBuoy };
 
@@ -31,6 +32,7 @@ function Notifications() {
               <Bell className="h-7 w-7 text-muted-foreground" />
             </div>
           }
+          skeleton={<ListRowsSkeleton rowClass="h-20" />}
         >
           {(notifications) => (
             <div className="space-y-2">

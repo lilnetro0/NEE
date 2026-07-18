@@ -16,8 +16,7 @@ export const Route = createFileRoute("/account/security")({
  * it is never treated as a backend identity provider.
  */
 function Security() {
-  const { t, locale } = useI18n();
-  const isAr = locale === "ar";
+  const { t } = useI18n();
   const { localUnlock } = usePlatform();
   const [tfa, setTfa] = useState(false);
   const [bio, setBio] = useState(false);
@@ -97,9 +96,7 @@ function Security() {
           </div>
           <div className="flex-1">
             <div className="text-sm font-semibold">{t("resetPassword")}</div>
-            <div className="text-xs text-muted-foreground">
-              {isAr ? "استخدم بريدك لإعادة تعيين كلمة المرور" : "Use your email to reset your password"}
-            </div>
+            <div className="text-xs text-muted-foreground">{t("account_resetHint")}</div>
           </div>
         </Link>
 

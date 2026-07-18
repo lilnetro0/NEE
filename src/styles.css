@@ -187,9 +187,10 @@
     scrollbar-width: none;
   }
 
-  /* Safe-area helpers */
+  /* Safe-area helpers. Top adds a touch of breathing room below the notch /
+     Dynamic Island so headers never feel glued to the hardware cutout. */
   .pt-safe {
-    padding-top: max(env(safe-area-inset-top), 0.75rem);
+    padding-top: max(calc(env(safe-area-inset-top) + 0.25rem), 0.75rem);
   }
   .pb-safe {
     padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
@@ -216,6 +217,19 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+/* Route transitions: quick, subtle cross-fade (View Transitions API). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 160ms;
+  animation-timing-function: ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
 }
 
 @keyframes shimmer {

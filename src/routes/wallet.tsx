@@ -18,7 +18,7 @@ export const Route = createFileRoute("/wallet")({
 });
 
 function StoreCreditScreen() {
-  const { locale, formatPrice } = useI18n();
+  const { t, locale, formatPrice } = useI18n();
   const isAr = locale === "ar";
   const { status, credit, refresh } = useStoreCredit();
   const { isEnabled } = useCapabilities();
@@ -29,7 +29,7 @@ function StoreCreditScreen() {
 
   return (
     <MobileScreen>
-      <TopBar title={isAr ? "رصيد متجر NETRO" : "NETRO Store Credit"} showBack />
+      <TopBar title={t("storeCredit")} showBack />
       <ScreenBody>
         <AsyncState
           status={status === "ready" && credit ? "ready" : status === "error" ? "error" : "loading"}
@@ -41,35 +41,28 @@ function StoreCreditScreen() {
               <div className="relative overflow-hidden rounded-3xl gradient-hero p-6 text-white shadow-elevated">
                 <div className="pointer-events-none absolute -end-8 -top-6 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
                 <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-white/70">
-                  <WalletIcon className="h-4 w-4" />{" "}
-                  {isAr ? "رصيد متجر NETRO" : "NETRO Store Credit"}
+                  <WalletIcon className="h-4 w-4" /> {t("storeCredit")}
                 </div>
                 <div className="mt-3 font-display text-4xl font-black">
                   <Bidi>{formatPrice(c.balance, c.currency)}</Bidi>
                 </div>
-                <div className="mt-1 text-xs text-white/70">
-                  {isAr ? "الرصيد المتاح" : "Available balance"}
-                </div>
+                <div className="mt-1 text-xs text-white/70">{t("wallet_availableBalance")}</div>
               </div>
 
               <div className="mt-4 flex items-start gap-2 rounded-2xl border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                <p>
-                  {isAr
-                    ? "رصيد متجر NETRO يُمنح كاسترداد أو ترويج فقط. لا يمكن إيداعه أو سحبه أو تحويله."
-                    : "NETRO Store Credit is issued as refunds or promotional credit only. It cannot be deposited, withdrawn, or transferred."}
-                </p>
+                <p>{t("wallet_creditPolicy")}</p>
               </div>
 
               {/* walletFundingEnabled is permanently off in local config — no deposit/withdraw CTAs. */}
 
               <h3 className="mb-2 mt-6 font-display text-sm font-bold uppercase tracking-widest text-muted-foreground">
-                {isAr ? "المعاملات" : "Transactions"}
+                {t("wallet_transactions")}
               </h3>
 
               {c.transactions.length === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">
-                  {isAr ? "لا توجد معاملات بعد" : "No transactions yet"}
+                  {t("wallet_noTransactions")}
                 </p>
               ) : (
                 <div className="space-y-2">

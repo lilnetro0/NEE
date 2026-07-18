@@ -3,11 +3,7 @@ import type { RequestOptions } from "../options";
 import { cancelledError, notFoundError, ok } from "../result";
 import { getSupabaseClient } from "@/lib/supabase";
 import { mapSupabaseError } from "./errors";
-import {
-  mapDbFulfillmentToDomain,
-  mapOrder,
-  mapQuote,
-} from "./mappers";
+import { mapDbFulfillmentToDomain, mapOrder, mapQuote } from "./mappers";
 import { deriveOrderDisplayStatus, toOrderListBucket } from "@/domain/order";
 import { mapDbPaymentToDomain, mapDbRefundToDomain } from "./mappers";
 
@@ -15,7 +11,10 @@ function aborted(options?: RequestOptions): boolean {
   return Boolean(options?.signal?.aborted);
 }
 
-async function invoke<T>(name: string, body: Record<string, unknown>): Promise<{ data: T | null; error: Error | null }> {
+async function invoke<T>(
+  name: string,
+  body: Record<string, unknown>,
+): Promise<{ data: T | null; error: Error | null }> {
   const { data, error } = await getSupabaseClient().functions.invoke(name, { body });
   if (error) return { data: null, error: new Error(error.message) };
   return { data: data as T, error: null };
@@ -46,9 +45,7 @@ export function createSupabaseOrderRepository(): OrderRepository {
         list.push(item);
         itemsByOrder.set(item.order_id, list);
       }
-      let mapped = (orders ?? []).map((order) =>
-        mapOrder(order, itemsByOrder.get(order.id) ?? []),
-      );
+      let mapped = (orders ?? []).map((order) => mapOrder(order, itemsByOrder.get(order.id) ?? []));
       if (params?.displayStatus) {
         mapped = mapped.filter((o) => o.displayStatus === params.displayStatus);
       }
@@ -61,7 +58,11 @@ export function createSupabaseOrderRepository(): OrderRepository {
     async getById(id, options) {
       if (aborted(options)) return cancelledError();
       const supabase = getSupabaseClient();
-      const { data: order, error } = await supabase.from("orders").select("*").eq("id", id).maybeSingle();
+      const { data: order, error } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
       if (error) return mapSupabaseError(error);
       if (!order) return notFoundError("Order", id);
       const { data: items, error: itemsError } = await supabase
@@ -83,7 +84,8 @@ export function createSupabaseOrderRepository(): OrderRepository {
         paymentMethod: input.paymentMethod,
         idempotencyKey,
       });
-      if (error || !data?.orderId) return mapSupabaseError({ message: error?.message ?? "UNKNOWN" });
+      if (error || !data?.orderId)
+        return mapSupabaseError({ message: error?.message ?? "UNKNOWN" });
       return this.getById(data.orderId, options);
     },
 
@@ -97,7 +99,8 @@ export function createSupabaseOrderRepository(): OrderRepository {
         promoCode: input.promoCode,
         simulate: input.simulate,
       });
-      if (error || !data?.quoteId) return mapSupabaseError({ message: error?.message ?? "UNKNOWN" });
+      if (error || !data?.quoteId)
+        return mapSupabaseError({ message: error?.message ?? "UNKNOWN" });
       const supabase = getSupabaseClient();
       const { data: quote, error: qErr } = await supabase
         .from("checkout_quotes")
@@ -118,7 +121,8 @@ export function createSupabaseOrderRepository(): OrderRepository {
         quoteId,
         simulate: options?.simulate,
       });
-      if (error || !data?.quoteId) return mapSupabaseError({ message: error?.message ?? "UNKNOWN" });
+      if (error || !data?.quoteId)
+        return mapSupabaseError({ message: error?.message ?? "UNKNOWN" });
       const supabase = getSupabaseClient();
       const { data: quote, error: qErr } = await supabase
         .from("checkout_quotes")
@@ -140,7 +144,8 @@ export function createSupabaseOrderRepository(): OrderRepository {
         itemIndex,
         reauthToken,
       });
-      if (error || !data?.code) return mapSupabaseError({ message: error?.message ?? "UNAUTHORIZED" });
+      if (error || !data?.code)
+        return mapSupabaseError({ message: error?.message ?? "UNAUTHORIZED" });
       return ok(data.code);
     },
 

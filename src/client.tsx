@@ -102,7 +102,21 @@ function ensureSpaShell(): void {
   window.$_TSR.streamEnded = true;
 }
 
+function hideNativeSplash(): void {
+  try {
+    const cap = (
+      window as Window & {
+        Capacitor?: { Plugins?: { SplashScreen?: { hide: () => Promise<void> } } };
+      }
+    ).Capacitor;
+    void cap?.Plugins?.SplashScreen?.hide();
+  } catch {
+    // No native splash to hide.
+  }
+}
+
 function paintBootError(error: unknown): void {
+  hideNativeSplash();
   const message =
     error instanceof Error
       ? error.message

@@ -80,6 +80,29 @@ Discriminated union — never a single undifferentiated product shape:
 | `TopUpPackage` | Direct top-up package options |
 | `DynamicTopUpField` | Normalized account fields (`player_id`, `server`, …) |
 
+### 4.2.1 Catalog browsing hierarchy
+
+The public catalog is browsed as:
+
+```text
+Category
+  └── Brand / Game
+        └── Region offering (products row)
+              └── Denomination or top-up package (SKU)
+```
+
+`Brand` is the canonical customer identity. Region must never be encoded into
+the brand name or brand ID. For compatibility, a `products` row remains the
+region-scoped offering and keeps the stable ID referenced by carts, quotes,
+orders, favorites, required fields, and supplier mappings.
+
+`regions` is the controlled source of localized region names and currency
+metadata. `products.region_id` references it. The legacy `region_code` column
+is retained during the dual-read migration window.
+
+Search and category pages return brands first. The customer chooses a region
+before seeing the offering's denominations/packages.
+
 Public products own:
 
 - Localized titles, descriptions, redemption copy

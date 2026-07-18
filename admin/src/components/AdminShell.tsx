@@ -5,6 +5,7 @@ const NAV: { to: string; label: string; permission?: string }[] = [
   { to: "/", label: "Dashboard", permission: "dashboard.read" },
   { to: "/products", label: "Products", permission: "catalog.read" },
   { to: "/categories", label: "Categories", permission: "catalog.read" },
+  { to: "/brands", label: "Brands & regions", permission: "catalog.read" },
   { to: "/suppliers", label: "Suppliers", permission: "suppliers.read" },
   { to: "/orders", label: "Orders", permission: "orders.read" },
   { to: "/users", label: "Users", permission: "users.read" },

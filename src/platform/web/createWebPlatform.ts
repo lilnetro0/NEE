@@ -61,6 +61,12 @@ function webConnectivity(): ConnectivityStatus {
  */
 export function createWebPlatform(): PlatformServices {
   return {
+    splash: {
+      async hide() {
+        // Browsers have no native launch splash.
+      },
+    },
+
     secureStorage: {
       async get(key) {
         try {

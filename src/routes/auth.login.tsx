@@ -12,8 +12,7 @@ export const Route = createFileRoute("/auth/login")({
 
 /** Email + password sign-in. Phone OTP is deferred until SMS is configured. */
 function Login() {
-  const { t, locale } = useI18n();
-  const isAr = locale === "ar";
+  const { t } = useI18n();
   const nav = useNavigate();
   const auth = useAuth();
   const [show, setShow] = useState(false);
@@ -37,7 +36,7 @@ function Login() {
 
   const submit = async () => {
     if (!email.includes("@") || password.length < 6) {
-      toast.error(isAr ? "أدخل بريداً وكلمة مرور صالحين" : "Enter a valid email and password");
+      toast.error(t("auth_enterValidCredentials"));
       return;
     }
     const ok = await auth.loginWithPassword(email.trim(), password);

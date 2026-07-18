@@ -7,6 +7,7 @@ import { useStore } from "@/store/StoreProvider";
 import { cn } from "@/lib/utils";
 
 export function ProductArt({ product, className }: { product: Product; className?: string }) {
+  const { t } = useI18n();
   return (
     <div
       className={cn("relative overflow-hidden rounded-3xl", className)}
@@ -28,7 +29,7 @@ export function ProductArt({ product, className }: { product: Product; className
       </div>
       <div className="absolute bottom-2 left-3 right-3 flex items-end justify-between text-white/90">
         <span className="text-[10px] font-medium uppercase tracking-widest opacity-80">
-          Digital
+          {t("digitalProduct")}
         </span>
         {product.kind === "direct_topup" && product.game.platform && (
           <span className="rounded-full bg-black/30 px-2 py-0.5 text-[10px] font-semibold backdrop-blur">
@@ -55,7 +56,8 @@ export function ProductCard({ product, size = "sm" }: { product: Product; size?:
             toggleFavorite(product.id);
           }}
           className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-black/40 backdrop-blur active:scale-95"
-          aria-label="Favorite"
+          aria-label={t("favorites")}
+          aria-pressed={fav}
         >
           <Heart className={cn("h-4 w-4", fav ? "fill-white text-white" : "text-white")} />
         </button>
@@ -100,7 +102,7 @@ export function CategoryTile({ cat }: { cat: Category }) {
   return (
     <Link
       to="/categories/$slug"
-      params={{ slug: cat.id }}
+      params={{ slug: cat.slug ?? cat.id }}
       className="group relative flex aspect-square flex-col justify-between overflow-hidden rounded-3xl p-3 active:scale-[0.98]"
       style={{
         background: `linear-gradient(135deg, ${cat.color}55 0%, ${cat.color}20 100%)`,
@@ -117,7 +119,7 @@ export function BrandTile({ brand }: { brand: Brand }) {
   return (
     <Link
       to="/brands/$slug"
-      params={{ slug: brand.id }}
+      params={{ slug: brand.slug ?? brand.id }}
       className="flex w-24 shrink-0 flex-col items-center gap-2"
     >
       <div
@@ -129,6 +131,27 @@ export function BrandTile({ brand }: { brand: Brand }) {
       <div className="line-clamp-1 w-full text-center text-[11px] font-medium text-muted-foreground">
         {brand.name}
       </div>
+    </Link>
+  );
+}
+
+export function BrandCard({ brand }: { brand: Brand }) {
+  const { locale, t } = useI18n();
+  const name = brand.localizedName?.[locale] ?? brand.name;
+  return (
+    <Link
+      to="/brands/$slug"
+      params={{ slug: brand.slug ?? brand.id }}
+      className="group block min-w-0 rounded-3xl border border-border bg-card p-4 shadow-card active:scale-[0.98]"
+    >
+      <div
+        className="grid aspect-square w-full place-items-center rounded-2xl text-4xl font-black text-white"
+        style={{ background: `linear-gradient(135deg, ${brand.color}, ${brand.color}cc)` }}
+      >
+        {brand.logo || name.slice(0, 1)}
+      </div>
+      <div className="mt-3 line-clamp-1 text-sm font-bold">{name}</div>
+      <div className="mt-0.5 text-[11px] text-muted-foreground">{t("selectRegion")}</div>
     </Link>
   );
 }

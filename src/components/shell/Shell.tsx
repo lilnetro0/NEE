@@ -1,4 +1,5 @@
-import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { useAppBack } from "@/lib/useAppBack";
 import {
   Home,
   LayoutGrid,
@@ -34,9 +35,9 @@ export function TopBar({
   right?: ReactNode;
   transparent?: boolean;
 }) {
-  const nav = useNavigate();
+  const goBack = useAppBack();
   const { count } = useStore();
-  const { dir } = useI18n();
+  const { dir, t } = useI18n();
   const BackIcon = dir === "rtl" ? ChevronRight : ChevronLeft;
   return (
     <header
@@ -47,9 +48,9 @@ export function TopBar({
     >
       {showBack && (
         <button
-          onClick={() => nav({ to: ".." as never })}
+          onClick={goBack}
           className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface active:scale-95"
-          aria-label="Back"
+          aria-label={t("back")}
         >
           <BackIcon className="h-5 w-5" />
         </button>
@@ -66,6 +67,7 @@ export function TopBar({
         {showFav && (
           <Link
             to="/favorites"
+            aria-label={t("favorites")}
             className="grid h-10 w-10 place-items-center rounded-full bg-surface active:scale-95"
           >
             <Heart className="h-5 w-5" />
@@ -74,15 +76,16 @@ export function TopBar({
         {showNotif && (
           <Link
             to="/notifications"
+            aria-label={t("notifications")}
             className="relative grid h-10 w-10 place-items-center rounded-full bg-surface active:scale-95"
           >
             <Bell className="h-5 w-5" />
-            <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-brand" />
           </Link>
         )}
         {showCart && (
           <Link
             to="/cart"
+            aria-label={t("cart")}
             className="relative grid h-10 w-10 place-items-center rounded-full bg-surface active:scale-95"
           >
             <ShoppingBag className="h-5 w-5" />

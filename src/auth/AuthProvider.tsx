@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AUTH_SECURE_REAUTH_KEY,
   type AuthSessionTokens,
@@ -75,6 +76,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { auth } = useRepositories();
   const { secureStorage, localUnlock } = usePlatform();
+  const queryClient = useQueryClient();
   const [phase, setPhase] = useState<AuthUiPhase>("booting");
   const [user, setUser] = useState<User | null>(null);
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
@@ -84,12 +86,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearSession = useCallback(async () => {
     await clearStoredSessionTokens(secureStorage);
     await secureStorage.remove(AUTH_SECURE_REAUTH_KEY);
+    // User-scoped cached data must never survive a sign-out.
+    queryClient.clear();
     setSession(null);
     setUser(null);
     setChallenge(null);
     setLastError(null);
     setPhase("anonymous");
-  }, [secureStorage]);
+  }, [secureStorage, queryClient]);
 
   const applySignIn = useCallback(
     async (nextUser: User, nextSession: AuthSessionTokens) => {
@@ -99,6 +103,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (policy.mode === "secure_storage" || policy.allowJsSessionMarker) {
         await writeStoredSessionTokens(secureStorage, nextSession);
       }
+      // Drop any cached user-scoped data from a previous session.
+      queryClient.clear();
       setUser(nextUser);
       setSession(nextSession);
       setChallenge(null);
@@ -106,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const unlockEnabled = await localUnlock.isEnabled();
       setPhase(unlockEnabled ? "locked" : "authenticated");
     },
-    [secureStorage, localUnlock],
+    [secureStorage, localUnlock, queryClient],
   );
 
   // Session restoration on boot — tokens only from secureStorage / cookies.
@@ -228,12 +234,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signup = useCallback(
-    async (input: {
-      displayName: string;
-      email: string;
-      password: string;
-      phone?: string;
-    }) => {
+    async (input: { displayName: string; email: string; password: string; phone?: string }) => {
       setPhase("loading");
       setLastError(null);
       const result = await auth.signup(input);

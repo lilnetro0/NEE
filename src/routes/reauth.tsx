@@ -60,11 +60,7 @@ function Reauth() {
       nav({ to: redirect as never });
       return;
     }
-    toast.message(
-      isAr
-        ? "فتح القفل المحلي غير متاح هنا — أدخل كلمة المرور."
-        : "Local unlock isn't available here — enter your password.",
-    );
+    toast.message(t("auth_localUnlockHere"));
   };
 
   return (

@@ -5,7 +5,9 @@
  */
 import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
+import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
 import { Preferences } from "@capacitor/preferences";
+import { SplashScreen } from "@capacitor/splash-screen";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import type { DeviceInformation, PlatformServices } from "../contracts";
 import { createWebPlatform } from "../web/createWebPlatform";
@@ -41,6 +43,45 @@ export function createNativePlatform(): PlatformServices {
 
   return {
     ...web,
+    splash: {
+      async hide() {
+        try {
+          // Fade keeps the handoff from the native splash to the first React
+          // paint from flashing (launchAutoHide is false in capacitor.config).
+          await SplashScreen.hide({ fadeOutDuration: 200 });
+        } catch {
+          // Plugin unavailable (e.g. stale native shell) — never block startup.
+        }
+      },
+    },
+    haptics: {
+      async impact(style = "light") {
+        try {
+          const map = {
+            light: ImpactStyle.Light,
+            medium: ImpactStyle.Medium,
+            heavy: ImpactStyle.Heavy,
+          };
+          await Haptics.impact({ style: map[style] });
+          return true;
+        } catch {
+          return web.haptics.impact(style);
+        }
+      },
+      async notification(type) {
+        try {
+          const map = {
+            success: NotificationType.Success,
+            warning: NotificationType.Warning,
+            error: NotificationType.Error,
+          };
+          await Haptics.notification({ type: map[type] });
+          return true;
+        } catch {
+          return web.haptics.notification(type);
+        }
+      },
+    },
     secureStorage: {
       async get(key) {
         try {

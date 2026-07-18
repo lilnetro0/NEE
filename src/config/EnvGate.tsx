@@ -2,6 +2,22 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { EnvConfigError, getPublicEnv, type PublicEnv } from "@/config/env";
 import { initObservability } from "@/lib/logger";
 
+type EnvState = { status: "ok"; env: PublicEnv } | { status: "error"; message: string };
+
+function readEnv(): EnvState {
+  try {
+    return { status: "ok", env: getPublicEnv() };
+  } catch (error) {
+    const message =
+      error instanceof EnvConfigError
+        ? error.message
+        : error instanceof Error
+          ? error.message
+          : "Invalid environment configuration";
+    return { status: "error", message };
+  }
+}
+
 type Props = {
   children: (env: PublicEnv) => ReactNode;
 };
@@ -20,56 +36,18 @@ const shellStyle: CSSProperties = {
 };
 
 /**
- * Validates public env once at startup and initializes observability.
+ * Validates public env synchronously at startup (env parsing is pure — an
+ * async gate here only added an extra full-screen "Loading…" frame) and
+ * initializes observability as a side effect.
  * Renders a clear failure screen when Supabase configuration is invalid.
  * Uses inline styles so Capacitor still shows an error if CSS fails to load.
  */
 export function EnvGate({ children }: Props) {
-  const [state, setState] = useState<
-    { status: "ok"; env: PublicEnv } | { status: "error"; message: string } | { status: "loading" }
-  >({ status: "loading" });
+  const [state] = useState<EnvState>(readEnv);
 
   useEffect(() => {
-    try {
-      const env = getPublicEnv();
-      void initObservability();
-      setState({ status: "ok", env });
-    } catch (error) {
-      const message =
-        error instanceof EnvConfigError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : "Invalid environment configuration";
-      setState({ status: "error", message });
-    }
-  }, []);
-
-  if (state.status === "loading") {
-    return (
-      <div style={shellStyle}>
-        <div>
-          <div
-            style={{
-              width: 64,
-              height: 64,
-              margin: "0 auto 16px",
-              borderRadius: 18,
-              display: "grid",
-              placeItems: "center",
-              fontWeight: 900,
-              fontSize: 28,
-              color: "#fff",
-              background: "linear-gradient(135deg,#3b82f6,#8b5cf6)",
-            }}
-          >
-            N
-          </div>
-          <p style={{ margin: 0, color: "#a8b0c2", fontSize: 14 }}>Loading…</p>
-        </div>
-      </div>
-    );
-  }
+    if (state.status === "ok") void initObservability();
+  }, [state]);
 
   if (state.status === "error") {
     return (

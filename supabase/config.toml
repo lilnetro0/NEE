@@ -1,8 +1,7 @@
 # Supabase local / CLI project config (minimal).
 # Link with: npx supabase link --project-ref <ref>
 
-[project]
-id = "netro"
+project_id = "netro"
 
 [api]
 enabled = true

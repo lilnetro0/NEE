@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
+import { keepPreviousData, useQuery, type QueryKey } from "@tanstack/react-query";
 import type { AppError, Result } from "../result";
 
 export type QueryStatus = "loading" | "ready" | "error" | "empty";
@@ -7,64 +8,80 @@ export type QueryResult<T> = {
   status: QueryStatus;
   data: T | undefined;
   error: AppError | null;
+  /** True while a background refresh is running with cached data on screen. */
+  refreshing: boolean;
   reload: () => void;
 };
 
-function toStatus<T>(result: Result<T>): { status: QueryStatus; data?: T; error: AppError | null } {
-  if (!result.ok) {
-    if (result.error.code === "cancelled") {
-      return { status: "loading", error: null };
-    }
-    return { status: "error", error: result.error };
+/** Carries the repository AppError through React Query's error channel. */
+class ResultQueryError extends Error {
+  readonly appError: AppError;
+
+  constructor(appError: AppError) {
+    super(appError.message);
+    this.name = "ResultQueryError";
+    this.appError = appError;
   }
-  const data = result.data;
-  if (data === null || data === undefined) {
-    return { status: "empty", data, error: null };
-  }
-  if (Array.isArray(data) && data.length === 0) {
-    return { status: "empty", data, error: null };
-  }
-  return { status: "ready", data, error: null };
+}
+
+function toAppError(error: unknown): AppError {
+  if (error instanceof ResultQueryError) return error.appError;
+  return {
+    code: "unknown",
+    message: error instanceof Error ? error.message : "Request failed",
+    cause: error,
+  };
+}
+
+function isEmptyData(data: unknown): boolean {
+  if (data === null || data === undefined) return true;
+  return Array.isArray(data) && data.length === 0;
 }
 
 /**
- * Runs a repository call with AbortController cancellation on dependency change/unmount.
+ * Repository query backed by the React Query cache.
+ *
  * Screens must not call fetch; they call repository methods through this hook.
+ * Cached data renders instantly on revisit while a background refetch keeps it
+ * fresh — a screen only reports "loading" when it has nothing to show yet.
  */
 export function useResultQuery<T>(
+  queryKey: QueryKey,
   fetcher: (signal: AbortSignal) => Promise<Result<T>>,
-  deps: readonly unknown[],
 ): QueryResult<T> {
-  const [status, setStatus] = useState<QueryStatus>("loading");
-  const [data, setData] = useState<T | undefined>(undefined);
-  const [error, setError] = useState<AppError | null>(null);
-  const [reloadToken, setReloadToken] = useState(0);
-  const fetcherRef = useRef(fetcher);
-  fetcherRef.current = fetcher;
+  const query = useQuery({
+    queryKey,
+    queryFn: async ({ signal }) => {
+      const result = await fetcher(signal);
+      if (!result.ok) throw new ResultQueryError(result.error);
+      // React Query treats `undefined` as "no data"; normalize to null.
+      return (result.data ?? null) as T | null;
+    },
+    placeholderData: keepPreviousData,
+  });
 
-  useEffect(() => {
-    const controller = new AbortController();
-    let active = true;
-    setStatus("loading");
-    setError(null);
+  const { refetch } = query;
+  const reload = useCallback(() => {
+    void refetch();
+  }, [refetch]);
 
-    void (async () => {
-      const result = await fetcherRef.current(controller.signal);
-      if (!active || controller.signal.aborted) return;
-      const next = toStatus(result);
-      setStatus(next.status);
-      setData(next.data);
-      setError(next.error);
-    })();
+  const data = (query.data ?? undefined) as T | undefined;
 
-    return () => {
-      active = false;
-      controller.abort();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps provided by caller
-  }, [...deps, reloadToken]);
+  let status: QueryStatus;
+  if (query.data !== undefined && !query.isError) {
+    status = isEmptyData(query.data) ? "empty" : "ready";
+  } else if (query.isError) {
+    const appError = toAppError(query.error);
+    status = appError.code === "cancelled" ? "loading" : "error";
+  } else {
+    status = "loading";
+  }
 
-  const reload = useCallback(() => setReloadToken((n) => n + 1), []);
-
-  return { status, data, error, reload };
+  return {
+    status,
+    data,
+    error: query.isError ? toAppError(query.error) : null,
+    refreshing: query.isFetching && query.data !== undefined,
+    reload,
+  };
 }

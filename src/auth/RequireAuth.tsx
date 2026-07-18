@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/auth/AuthProvider";
 import { MobileScreen, TopBar, ScreenBody } from "@/components/shell/Shell";
+import { ListRowsSkeleton } from "@/components/common/Skeletons";
 
 /**
  * Client-side route guard for authenticated surfaces.
@@ -18,13 +19,13 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   }, [auth.phase, nav]);
 
   if (auth.phase === "booting") {
+    // Session restore usually resolves in a few frames; a content-shaped
+    // placeholder avoids a flash of blank screen or spinner.
     return (
       <MobileScreen>
-        <TopBar title="" showBack={false} showCart={false} />
+        <TopBar title="" showBack={false} showCart={false} showNotif={false} />
         <ScreenBody>
-          <div className="grid min-h-[40dvh] place-items-center text-sm text-muted-foreground">
-            …
-          </div>
+          <ListRowsSkeleton count={4} />
         </ScreenBody>
       </MobileScreen>
     );

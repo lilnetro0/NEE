@@ -13,8 +13,7 @@ export const Route = createFileRoute("/account/email")({
 });
 
 function ChangeEmail() {
-  const { locale, t } = useI18n();
-  const isAr = locale === "ar";
+  const { t } = useI18n();
   const nav = useNavigate();
   const authUi = useAuth();
   const { requestEmailChange, verifyEmailChange } = useUserActions();
@@ -35,7 +34,7 @@ function ChangeEmail() {
 
   const requestOtp = async () => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error(isAr ? "بريد غير صالح" : "Invalid email");
+      toast.error(t("account_invalidEmail"));
       return;
     }
     setBusy(true);
@@ -47,7 +46,7 @@ function ChangeEmail() {
       }
       setChallenge(result.data);
       setStep("otp");
-      toast.success(isAr ? "أرسلنا رمزاً إلى بريدك" : "We sent a verification code");
+      toast.success(t("account_codeSentEmail"));
     } finally {
       setBusy(false);
     }
@@ -65,7 +64,7 @@ function ChangeEmail() {
         return;
       }
       await authUi.clearReauthToken();
-      toast.success(isAr ? "تم تحديث البريد" : "Email updated");
+      toast.success(t("account_emailUpdated"));
       nav({ to: "/account" });
     } finally {
       setBusy(false);
@@ -74,7 +73,7 @@ function ChangeEmail() {
 
   return (
     <MobileScreen>
-      <TopBar title={isAr ? "تغيير البريد" : "Change email"} showBack />
+      <TopBar title={t("account_changeEmail")} showBack />
       <ScreenBody>
         <div className="mx-auto mt-4 grid h-14 w-14 place-items-center rounded-2xl bg-primary/15 text-primary">
           <Mail className="h-6 w-6" />
@@ -83,7 +82,7 @@ function ChangeEmail() {
         {step === "input" ? (
           <>
             <label className="mt-6 mb-1.5 block text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              {isAr ? "البريد الجديد" : "New email"}
+              {t("account_newEmail")}
             </label>
             <input
               type="email"
@@ -105,7 +104,7 @@ function ChangeEmail() {
         ) : (
           <>
             <p className="mt-4 text-center text-sm text-muted-foreground">
-              {isAr ? "أدخل الرمز المرسل إلى" : "Enter the code sent to"}{" "}
+              {t("account_enterCodeSentTo")}{" "}
               <span dir="ltr" className="font-mono font-semibold text-foreground">
                 {challenge?.destinationMasked ?? email}
               </span>
@@ -127,7 +126,7 @@ function ChangeEmail() {
               disabled={busy || code.length !== 6}
               className="mt-6 h-14 w-full rounded-full gradient-brand text-sm font-bold text-brand-foreground disabled:opacity-50"
             >
-              {busy ? "..." : isAr ? "تأكيد" : "Verify"}
+              {busy ? "..." : t("verify")}
             </button>
           </>
         )}

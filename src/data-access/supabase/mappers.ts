@@ -29,6 +29,7 @@ import type { AuthSessionTokens } from "@/domain/auth";
 import type { Session } from "@supabase/supabase-js";
 
 type ProductRow = Database["public"]["Tables"]["products"]["Row"];
+type RegionRow = Database["public"]["Tables"]["regions"]["Row"];
 type DenomRow = Database["public"]["Tables"]["denominations"]["Row"];
 type PackageRow = Database["public"]["Tables"]["topup_packages"]["Row"];
 type FieldRow = Database["public"]["Tables"]["product_required_fields"]["Row"];
@@ -42,10 +43,11 @@ function localized(en: string, ar: string) {
   return { en, ar };
 }
 
-function asRegion(code: string): Region {
+function asRegion(code: string, row?: RegionRow): Region {
   return {
     code: code.toUpperCase(),
-    name: { en: code, ar: code },
+    name: row ? localized(row.name_en, row.name_ar) : { en: code, ar: code },
+    currencyCode: row ? asCurrency(row.currency_code) : undefined,
   };
 }
 
@@ -81,6 +83,7 @@ export function mapProduct(
   denominations: DenomRow[],
   packages: PackageRow[],
   fields: FieldRow[],
+  region?: RegionRow,
 ): Product {
   const base = {
     id: row.id,
@@ -116,7 +119,7 @@ export function mapProduct(
     const gift: GiftCardProduct = {
       ...base,
       kind: "gift_card",
-      region: asRegion(row.region_code),
+      region: asRegion(row.region_id || row.region_code, region),
       redemptionCurrency: asCurrency(
         String((payload.redemptionCurrency as string | undefined) ?? row.display_currency),
       ),
@@ -161,11 +164,12 @@ export function mapProduct(
     ...base,
     kind: "direct_topup",
     game,
-    region: asRegion(row.region_code),
+    region: asRegion(row.region_id || row.region_code, region),
     packages: pkgs,
     requiredFields,
     validation,
-    fulfillmentMode: (payload.fulfillmentMode as DirectTopUpProduct["fulfillmentMode"]) ?? "automatic",
+    fulfillmentMode:
+      (payload.fulfillmentMode as DirectTopUpProduct["fulfillmentMode"]) ?? "automatic",
     fulfillmentEstimateMinutes: Number(payload.fulfillmentEstimateMinutes ?? 5),
   };
   return topup;
@@ -174,19 +178,29 @@ export function mapProduct(
 export function mapCategory(row: Database["public"]["Tables"]["categories"]["Row"]): Category {
   return {
     id: row.id,
+    slug: row.slug,
     name: localized(row.name_en, row.name_ar),
     icon: "•",
     color: "#64748b",
+    imagePath: row.image_path ?? undefined,
   };
 }
 
 export function mapBrand(row: Database["public"]["Tables"]["brands"]["Row"]): Brand {
   return {
     id: row.id,
+    slug: row.slug,
     name: row.name_en,
+    localizedName: localized(row.name_en, row.name_ar),
     color: row.color,
     logo: "",
+    imagePath: row.image_path ?? undefined,
+    primaryCategoryId: row.primary_category_id ?? undefined,
   };
+}
+
+export function mapRegion(row: RegionRow): Region {
+  return asRegion(row.code, row);
 }
 
 export function mapNotification(
@@ -222,9 +236,7 @@ export function mapStoreCredit(
   };
 }
 
-export function mapDbPaymentToDomain(
-  status: OrderRow["payment_status"],
-): PaymentStatus {
+export function mapDbPaymentToDomain(status: OrderRow["payment_status"]): PaymentStatus {
   switch (status) {
     case "pending_payment":
       return "not_started";
@@ -282,9 +294,7 @@ export function mapQuote(row: QuoteRow, items: QuoteItemRow[]): CheckoutQuote {
     currency: asCurrency(item.currency),
     regionCode: item.region_code,
     regionLabel: localized(item.region_label_en, item.region_label_ar),
-    redemptionCurrency: item.redemption_currency
-      ? asCurrency(item.redemption_currency)
-      : undefined,
+    redemptionCurrency: item.redemption_currency ? asCurrency(item.redemption_currency) : undefined,
     available: item.available,
   }));
 

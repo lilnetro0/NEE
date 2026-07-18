@@ -25,6 +25,8 @@ export {
   useCategory,
   useBrands,
   useBrand,
+  useRegions,
+  useBrandRegions,
   useVerifyAccount,
 } from "./hooks/useCatalog";
 export { useOrders, useOrder, useOrderMutations } from "./hooks/useOrders";

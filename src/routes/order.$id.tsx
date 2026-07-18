@@ -24,6 +24,7 @@ import {
 } from "@/domain/order";
 import { cn } from "@/lib/utils";
 import { LTR_ATTR, maskDigitalCode } from "@/lib/security";
+import { OrderDetailSkeleton } from "@/components/common/Skeletons";
 
 export const Route = createFileRoute("/order/$id")({
   component: OrderDetail,
@@ -48,9 +49,9 @@ function OrderDetail() {
   if (status === "loading" || !order) {
     return (
       <MobileScreen>
-        <TopBar title={id} showBack showCart={false} />
+        <TopBar title="" showBack showCart={false} />
         <ScreenBody>
-          <div className="py-16 text-center text-sm text-muted-foreground">{t("loading")}</div>
+          <OrderDetailSkeleton />
         </ScreenBody>
       </MobileScreen>
     );
@@ -67,7 +68,15 @@ function OrderDetail() {
 
   return (
     <MobileScreen>
-      <TopBar title={order.id} showBack showCart={false} />
+      <TopBar
+        title={
+          <h1 className="truncate font-display text-lg font-semibold" dir="ltr">
+            {order.id.slice(0, 8)}…
+          </h1>
+        }
+        showBack
+        showCart={false}
+      />
       <ScreenBody>
         <div className="rounded-2xl border border-border bg-card p-4">
           <div className="flex items-start justify-between gap-3">
@@ -84,15 +93,15 @@ function OrderDetail() {
 
           <div className="mt-4 space-y-2 rounded-xl bg-surface/60 p-3 text-sm">
             <StatusRow
-              label={isAr ? "الدفع" : "Payment"}
+              label={t("payment")}
               value={localizedPaymentStatus(order.paymentStatus, locale)}
             />
             <StatusRow
-              label={isAr ? "التنفيذ" : "Fulfillment"}
+              label={t("fulfillment")}
               value={localizedFulfillmentStatus(order.fulfillmentStatus, locale)}
             />
             <StatusRow
-              label={isAr ? "الاسترداد" : "Refund"}
+              label={t("refund")}
               value={localizedRefundStatus(order.refundStatus, locale)}
             />
           </div>
@@ -136,7 +145,7 @@ function OrderDetail() {
                 onClick={async () => {
                   const didCopy = await clipboard.writeText(code);
                   if (!didCopy) {
-                    toast.error(isAr ? "تعذر النسخ" : "Could not copy");
+                    toast.error(t("copyFailed"));
                     return;
                   }
                   setCopied(true);
@@ -219,13 +228,7 @@ function OrderDetail() {
               params={{ id: order.id }}
               className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-surface py-4 text-sm font-semibold"
             >
-              {order.displayStatus === "refunded"
-                ? isAr
-                  ? "تفاصيل الاسترداد"
-                  : "Refund details"
-                : isAr
-                  ? "متابعة الاسترداد"
-                  : "Track refund"}
+              {order.displayStatus === "refunded" ? t("refundDetails") : t("trackRefund")}
             </Link>
           )}
           {order.displayStatus === "fulfillment_processing" ||
@@ -235,7 +238,7 @@ function OrderDetail() {
               params={{ id: order.id }}
               className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-surface py-4 text-sm font-semibold"
             >
-              {isAr ? "متابعة التنفيذ" : "Track fulfillment"}
+              {t("trackFulfillment")}
             </Link>
           ) : null}
           <Link
@@ -251,7 +254,7 @@ function OrderDetail() {
               "flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-sm font-semibold text-muted-foreground",
             )}
           >
-            <Home className="h-4 w-4" /> {isAr ? "العودة للرئيسية" : "Return home"}
+            <Home className="h-4 w-4" /> {t("returnHome")}
           </Link>
         </div>
       </ScreenBody>

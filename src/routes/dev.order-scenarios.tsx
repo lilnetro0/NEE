@@ -11,7 +11,7 @@ export const Route = createFileRoute("/dev/order-scenarios")({
 
 /** Development-only gallery for every significant order lifecycle state. */
 function DevOrderScenarios() {
-  const { locale } = useI18n();
+  const { t, locale } = useI18n();
   const isAr = locale === "ar";
 
   if (!isDevToolsEnabled()) {
@@ -20,13 +20,9 @@ function DevOrderScenarios() {
 
   return (
     <MobileScreen>
-      <TopBar title={isAr ? "سيناريوهات الطلب" : "Order scenarios"} showBack showCart={false} />
+      <TopBar title={t("orderScenarios")} showBack showCart={false} />
       <ScreenBody>
-        <p className="mb-4 text-sm text-muted-foreground">
-          {isAr
-            ? "حالات وهمية للتطوير — الدفع والتنفيذ والاسترداد منفصلان."
-            : "Mock lifecycle states for development — payment, fulfillment, and refund are independent."}
-        </p>
+        <p className="mb-4 text-sm text-muted-foreground">{t("dev_orderScenariosIntro")}</p>
         <div className="space-y-3">
           {ORDER_SCENARIOS.map((s) => (
             <div key={s.id} className="rounded-2xl border border-border bg-card p-4">
@@ -51,7 +47,7 @@ function DevOrderScenarios() {
                   params={{ id: s.order.id }}
                   className="rounded-full bg-brand px-3 py-1.5 text-xs font-bold text-brand-foreground"
                 >
-                  {isAr ? "التفاصيل" : "Details"}
+                  {t("details")}
                 </Link>
                 {s.order.displayStatus === "fulfillment_processing" ||
                 s.order.displayStatus === "payment_confirmed" ? (
@@ -60,7 +56,7 @@ function DevOrderScenarios() {
                     params={{ id: s.order.id }}
                     className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold"
                   >
-                    {isAr ? "التنفيذ" : "Fulfillment"}
+                    {t("fulfillment")}
                   </Link>
                 ) : null}
                 {s.order.displayStatus === "fulfilled" ||
@@ -73,7 +69,7 @@ function DevOrderScenarios() {
                     }}
                     className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold"
                   >
-                    {isAr ? "النجاح" : "Success"}
+                    {t("success")}
                   </Link>
                 ) : null}
                 {s.order.displayStatus === "partially_fulfilled" ? (
@@ -82,7 +78,7 @@ function DevOrderScenarios() {
                     params={{ id: s.order.id }}
                     className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold"
                   >
-                    {isAr ? "جزئي" : "Partial"}
+                    {t("partial")}
                   </Link>
                 ) : null}
                 {s.order.displayStatus === "fulfillment_failed" ? (
@@ -91,7 +87,7 @@ function DevOrderScenarios() {
                     params={{ id: s.order.id }}
                     className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold"
                   >
-                    {isAr ? "فشل" : "Failed"}
+                    {t("failed")}
                   </Link>
                 ) : null}
                 {s.order.displayStatus === "refund_pending" ||
@@ -101,7 +97,7 @@ function DevOrderScenarios() {
                     params={{ id: s.order.id }}
                     className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold"
                   >
-                    {isAr ? "استرداد" : "Refund"}
+                    {t("refund")}
                   </Link>
                 ) : null}
               </div>

@@ -8,8 +8,12 @@ type Props<T> = {
   error?: Error | string | null;
   onRetry?: () => void;
   loadingLabel?: string;
+  /** Content-shaped placeholder shown while loading instead of the spinner. */
+  skeleton?: ReactNode;
   emptyLabel?: string;
   emptyIcon?: ReactNode;
+  /** Optional call-to-action rendered under the empty state. */
+  emptyAction?: ReactNode;
   children: (data: T) => ReactNode;
 };
 
@@ -23,14 +27,16 @@ export function AsyncState<T>({
   error,
   onRetry,
   loadingLabel,
+  skeleton,
   emptyLabel,
   emptyIcon,
+  emptyAction,
   children,
 }: Props<T>) {
-  const { t, locale } = useI18n();
-  const isAr = locale === "ar";
+  const { t } = useI18n();
 
   if (status === "loading") {
+    if (skeleton) return <>{skeleton}</>;
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
         <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
@@ -43,9 +49,7 @@ export function AsyncState<T>({
       <div className="mx-auto flex max-w-xs flex-col items-center gap-3 py-12 text-center">
         <AlertCircle className="h-8 w-8 text-destructive" aria-hidden />
         <p className="text-sm text-muted-foreground">
-          {typeof error === "string"
-            ? error
-            : (error?.message ?? (isAr ? "حدث خطأ ما" : "Something went wrong"))}
+          {typeof error === "string" ? error : (error?.message ?? t("error_genericTitle"))}
         </p>
         {onRetry && (
           <button
@@ -63,9 +67,8 @@ export function AsyncState<T>({
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
         {emptyIcon ?? <Inbox className="h-8 w-8" aria-hidden />}
-        <p className="text-sm">
-          {emptyLabel ?? (isAr ? "لا يوجد شيء هنا بعد" : "Nothing here yet")}
-        </p>
+        <p className="text-sm">{emptyLabel ?? t("empty_generic")}</p>
+        {emptyAction}
       </div>
     );
   }

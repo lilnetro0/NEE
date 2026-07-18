@@ -5,7 +5,7 @@ import { getSupabaseClient } from "@/lib/supabase";
 
 export function useNotifications() {
   const { notifications } = useRepositories();
-  const query = useResultQuery((signal) => notifications.list({ signal }), [notifications]);
+  const query = useResultQuery(["notifications"], (signal) => notifications.list({ signal }));
   const { reload } = query;
 
   useEffect(() => {
@@ -44,15 +44,15 @@ export function useNotifications() {
 
 export function useCurrentUser() {
   const { users } = useRepositories();
-  return useResultQuery((signal) => users.getCurrent({ signal }), [users]);
+  return useResultQuery(["currentUser"], (signal) => users.getCurrent({ signal }));
 }
 
 export function useStoreCreditQuery() {
   const { users } = useRepositories();
-  return useResultQuery((signal) => users.getStoreCredit({ signal }), [users]);
+  return useResultQuery(["storeCredit"], (signal) => users.getStoreCredit({ signal }));
 }
 
 export function usePromotions() {
   const { promotions } = useRepositories();
-  return useResultQuery((signal) => promotions.list({ signal }), [promotions]);
+  return useResultQuery(["promotions"], (signal) => promotions.list({ signal }));
 }

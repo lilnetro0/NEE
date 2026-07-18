@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { adminApi } from "@/lib/api";
 import { useAuth } from "@/auth/AuthProvider";
 import { ErrorBanner, LoadingBlock, PageHeader } from "@/components/ui";
@@ -18,6 +18,7 @@ type ProductForm = {
   from_price: number;
   display_currency: string;
   region_code: string;
+  region_id: string;
   is_visible: boolean;
   is_featured: boolean;
   is_archived: boolean;
@@ -43,6 +44,7 @@ const emptyProduct = (): ProductForm => ({
   from_price: 0,
   display_currency: "SAR",
   region_code: "GLOBAL",
+  region_id: "GLOBAL",
   is_visible: true,
   is_featured: false,
   is_archived: false,
@@ -56,12 +58,23 @@ const emptyProduct = (): ProductForm => ({
 
 export function ProductDetailPage() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const isNew = id === "new";
   const { can } = useAuth();
   const nav = useNavigate();
-  const [form, setForm] = useState<ProductForm>(emptyProduct());
+  const [form, setForm] = useState<ProductForm>(() => ({
+    ...emptyProduct(),
+    brand_id: searchParams.get("brandId") ?? "",
+    category_id: searchParams.get("categoryId") ?? "",
+  }));
+  const [brands, setBrands] = useState<Array<{ id: string; name_en: string }>>([]);
+  const [categories, setCategories] = useState<Array<{ id: string; name_en: string }>>([]);
+  const [regions, setRegions] = useState<
+    Array<{ code: string; name_en: string; currency_code: string }>
+  >([]);
   const [dens, setDens] = useState<Array<Record<string, unknown>>>([]);
   const [pkgs, setPkgs] = useState<Array<Record<string, unknown>>>([]);
+  const [requiredFields, setRequiredFields] = useState<Array<Record<string, unknown>>>([]);
   const [mappings, setMappings] = useState<Array<Record<string, unknown>>>([]);
   const [suppliers, setSuppliers] = useState<Array<{ id: string; name: string; code: string }>>([]);
   const [error, setError] = useState<string | null>(null);
@@ -73,11 +86,13 @@ export function ProductDetailPage() {
       product: ProductForm;
       denominations: Array<Record<string, unknown>>;
       packages: Array<Record<string, unknown>>;
+      requiredFields: Array<Record<string, unknown>>;
     }>("catalog", "getProduct", { id })
       .then((res) => {
         setForm({ ...emptyProduct(), ...res.product, tags: res.product.tags ?? [] });
         setDens(res.denominations);
         setPkgs(res.packages);
+        setRequiredFields(res.requiredFields);
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : "Failed"));
 
@@ -89,6 +104,22 @@ export function ProductDetailPage() {
       (res) => setSuppliers(res.items),
     );
   }, [id, isNew]);
+
+  useEffect(() => {
+    void Promise.all([
+      adminApi<{ items: Array<{ id: string; name_en: string }> }>("catalog", "listBrands"),
+      adminApi<{ items: Array<{ id: string; name_en: string }> }>("catalog", "listCategories"),
+      adminApi<{
+        items: Array<{ code: string; name_en: string; currency_code: string }>;
+      }>("catalog", "listRegions"),
+    ])
+      .then(([brandResult, categoryResult, regionResult]) => {
+        setBrands(brandResult.items);
+        setCategories(categoryResult.items);
+        setRegions(regionResult.items);
+      })
+      .catch((cause: unknown) => setError(cause instanceof Error ? cause.message : "Failed"));
+  }, []);
 
   const saveProduct = (e: FormEvent) => {
     e.preventDefault();
@@ -122,8 +153,6 @@ export function ProductDetailPage() {
         {(
           [
             ["id", "Product ID"],
-            ["brand_id", "Brand ID"],
-            ["category_id", "Category ID"],
             ["title_en", "Title EN"],
             ["title_ar", "Title AR"],
             ["description_en", "Description EN"],
@@ -133,7 +162,6 @@ export function ProductDetailPage() {
             ["seo_description_en", "SEO description EN"],
             ["seo_description_ar", "SEO description AR"],
             ["display_currency", "Currency"],
-            ["region_code", "Region"],
             ["color", "Color"],
           ] as const
         ).map(([key, label]) => (
@@ -148,6 +176,68 @@ export function ProductDetailPage() {
             />
           </label>
         ))}
+        <label className="space-y-1 text-sm">
+          <span className="text-slate-400">Brand</span>
+          <select
+            className="select"
+            value={form.brand_id}
+            disabled={!can("catalog.write")}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, brand_id: event.target.value }))
+            }
+            required
+          >
+            <option value="">Select an existing brand</option>
+            {brands.map((brand) => (
+              <option key={brand.id} value={brand.id}>
+                {brand.name_en}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="space-y-1 text-sm">
+          <span className="text-slate-400">Category</span>
+          <select
+            className="select"
+            value={form.category_id}
+            disabled={!can("catalog.write")}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, category_id: event.target.value }))
+            }
+            required
+          >
+            <option value="">Select category</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name_en}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="space-y-1 text-sm">
+          <span className="text-slate-400">Region</span>
+          <select
+            className="select"
+            value={form.region_id}
+            disabled={!can("catalog.write")}
+            onChange={(event) => {
+              const selected = regions.find((region) => region.code === event.target.value);
+              setForm((current) => ({
+                ...current,
+                region_id: event.target.value,
+                region_code: event.target.value,
+                display_currency: selected?.currency_code ?? current.display_currency,
+              }));
+            }}
+            required
+          >
+            {regions.map((region) => (
+              <option key={region.code} value={region.code}>
+                {region.name_en} ({region.code})
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="space-y-1 text-sm">
           <span className="text-slate-400">Kind</span>
           <select
@@ -258,34 +348,42 @@ export function ProductDetailPage() {
       ) : null}
 
       {!isNew && form.kind === "direct_topup" ? (
-        <VariantSection
-          title="Variants (packages / SKUs)"
-          rows={pkgs}
-          canWrite={can("catalog.write")}
-          onAdd={() => {
-            const sku = `${form.id}-p-${Date.now()}`;
-            const row = {
-              id: sku,
-              product_id: form.id,
-              label: "New package",
-              amount: 0,
-              price: 0,
-              in_stock: true,
-              is_active: true,
-              sort_order: pkgs.length,
-            };
-            void adminApi("catalog", "upsertPackage", { package: row }).then(() =>
-              setPkgs((prev) => [...prev, row]),
-            );
-          }}
-          onSave={(row) => adminApi("catalog", "upsertPackage", { package: row })}
-          onDelete={(sku) =>
-            adminApi("catalog", "deletePackage", { id: sku }).then(() =>
-              setPkgs((prev) => prev.filter((r) => r.id !== sku)),
-            )
-          }
-          fields={["id", "label", "amount", "price", "in_stock", "is_active", "sort_order"]}
-        />
+        <>
+          <VariantSection
+            title="Variants (packages / SKUs)"
+            rows={pkgs}
+            canWrite={can("catalog.write")}
+            onAdd={() => {
+              const sku = `${form.id}-p-${Date.now()}`;
+              const row = {
+                id: sku,
+                product_id: form.id,
+                label: "New package",
+                amount: 0,
+                price: 0,
+                in_stock: true,
+                is_active: true,
+                sort_order: pkgs.length,
+              };
+              void adminApi("catalog", "upsertPackage", { package: row }).then(() =>
+                setPkgs((prev) => [...prev, row]),
+              );
+            }}
+            onSave={(row) => adminApi("catalog", "upsertPackage", { package: row })}
+            onDelete={(sku) =>
+              adminApi("catalog", "deletePackage", { id: sku }).then(() =>
+                setPkgs((prev) => prev.filter((r) => r.id !== sku)),
+              )
+            }
+            fields={["id", "label", "amount", "price", "in_stock", "is_active", "sort_order"]}
+          />
+          <RequiredFieldsSection
+            productId={form.id}
+            rows={requiredFields}
+            canWrite={can("catalog.write")}
+            onChange={setRequiredFields}
+          />
+        </>
       ) : null}
 
       {!isNew ? (
@@ -301,6 +399,144 @@ export function ProductDetailPage() {
             }).then((res) => setMappings(res.items))
           }
         />
+      ) : null}
+    </div>
+  );
+}
+
+function RequiredFieldsSection({
+  productId,
+  rows,
+  canWrite,
+  onChange,
+}: {
+  productId: string;
+  rows: Array<Record<string, unknown>>;
+  canWrite: boolean;
+  onChange: (rows: Array<Record<string, unknown>>) => void;
+}) {
+  return (
+    <section className="card space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-bold">Account fields</h2>
+          <p className="text-xs text-slate-500">
+            Collected after region selection and before direct top-up checkout.
+          </p>
+        </div>
+        {canWrite ? (
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              const fieldKey = `field_${rows.length + 1}`;
+              onChange([
+                ...rows,
+                {
+                  product_id: productId,
+                  field_key: fieldKey,
+                  field_schema: {
+                    key: fieldKey,
+                    type: "text",
+                    label: { en: "New field", ar: "حقل جديد" },
+                    required: true,
+                  },
+                },
+              ]);
+            }}
+          >
+            Add field
+          </button>
+        ) : null}
+      </div>
+      {rows.map((row, index) => (
+        <RequiredFieldRow
+          key={`${String(row.field_key)}-${index}`}
+          productId={productId}
+          row={row}
+          canWrite={canWrite}
+          onSave={(next) =>
+            onChange(rows.map((item, itemIndex) => (itemIndex === index ? next : item)))
+          }
+          onDelete={() => onChange(rows.filter((_, itemIndex) => itemIndex !== index))}
+        />
+      ))}
+    </section>
+  );
+}
+
+function RequiredFieldRow({
+  productId,
+  row,
+  canWrite,
+  onSave,
+  onDelete,
+}: {
+  productId: string;
+  row: Record<string, unknown>;
+  canWrite: boolean;
+  onSave: (row: Record<string, unknown>) => void;
+  onDelete: () => void;
+}) {
+  const [fieldKey, setFieldKey] = useState(String(row.field_key ?? ""));
+  const [schemaText, setSchemaText] = useState(JSON.stringify(row.field_schema ?? {}, null, 2));
+  const [schemaError, setSchemaError] = useState<string | null>(null);
+
+  return (
+    <div className="grid gap-2 rounded-xl border border-slate-800 p-3">
+      <input
+        className="input"
+        value={fieldKey}
+        disabled={!canWrite}
+        onChange={(event) => setFieldKey(event.target.value)}
+      />
+      <textarea
+        className="input min-h-32 font-mono text-xs"
+        value={schemaText}
+        disabled={!canWrite}
+        onChange={(event) => {
+          setSchemaText(event.target.value);
+          setSchemaError(null);
+        }}
+      />
+      {schemaError ? <p className="text-xs text-red-400">{schemaError}</p> : null}
+      {canWrite ? (
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => {
+              try {
+                const fieldSchema: unknown = JSON.parse(schemaText);
+                const next = {
+                  ...row,
+                  product_id: productId,
+                  field_key: fieldKey,
+                  field_schema: fieldSchema,
+                };
+                void adminApi("catalog", "upsertRequiredField", { field: next }).then(() =>
+                  onSave(next),
+                );
+              } catch {
+                setSchemaError("Schema must be valid JSON.");
+              }
+            }}
+          >
+            Save field
+          </button>
+          <button
+            type="button"
+            className="text-sm text-red-400"
+            onClick={() =>
+              void adminApi("catalog", "deleteRequiredField", {
+                productId,
+                fieldKey: row.field_key,
+              }).then(onDelete)
+            }
+          >
+            Delete
+          </button>
+        </div>
       ) : null}
     </div>
   );

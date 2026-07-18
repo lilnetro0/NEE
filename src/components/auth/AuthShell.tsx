@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
-import { useNavigate } from "@tanstack/react-router";
+import { useAppBack } from "@/lib/useAppBack";
 
 export function AuthShell({
   title,
@@ -15,15 +15,16 @@ export function AuthShell({
   children: ReactNode;
   footer?: ReactNode;
 }) {
-  const { dir } = useI18n();
-  const nav = useNavigate();
+  const { dir, t } = useI18n();
+  const goBack = useAppBack();
   const Back = dir === "rtl" ? ChevronRight : ChevronLeft;
   return (
     <div className="pt-safe flex min-h-[100dvh] flex-col bg-background px-6">
       <div className="py-3">
         <button
-          onClick={() => nav({ to: ".." as never })}
+          onClick={goBack}
           className="grid h-10 w-10 place-items-center rounded-full bg-surface active:scale-95"
+          aria-label={t("back")}
         >
           <Back className="h-5 w-5" />
         </button>

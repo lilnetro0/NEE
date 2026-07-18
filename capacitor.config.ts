@@ -22,6 +22,15 @@ const config: CapacitorConfig = {
       style: "DARK",
       backgroundColor: "#0B1220",
     },
+    SplashScreen: {
+      // The app hides the splash itself (platform.splash.hide) once the first
+      // screen has painted, so there is exactly one loading experience.
+      launchAutoHide: false,
+      backgroundColor: "#0d0f1a",
+      showSpinner: false,
+      splashFullScreen: true,
+      splashImmersive: true,
+    },
   },
   ...(serverUrl
     ? {

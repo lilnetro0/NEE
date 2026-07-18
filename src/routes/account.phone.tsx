@@ -13,8 +13,7 @@ export const Route = createFileRoute("/account/phone")({
 });
 
 function ChangePhone() {
-  const { locale, t } = useI18n();
-  const isAr = locale === "ar";
+  const { t } = useI18n();
   const nav = useNavigate();
   const authUi = useAuth();
   const { requestPhoneChange, verifyPhoneChange } = useUserActions();
@@ -35,7 +34,7 @@ function ChangePhone() {
 
   const requestOtp = async () => {
     if (!/^\+?\d{8,15}$/.test(phone.replace(/\s/g, ""))) {
-      toast.error(isAr ? "رقم غير صالح" : "Invalid number");
+      toast.error(t("account_invalidPhone"));
       return;
     }
     setBusy(true);
@@ -47,7 +46,7 @@ function ChangePhone() {
       }
       setChallenge(result.data);
       setStep("otp");
-      toast.success(isAr ? "أرسلنا رمزاً برسالة نصية" : "We sent a code via SMS");
+      toast.success(t("account_codeSentSms"));
     } finally {
       setBusy(false);
     }
@@ -65,7 +64,7 @@ function ChangePhone() {
         return;
       }
       await authUi.clearReauthToken();
-      toast.success(isAr ? "تم تحديث الهاتف" : "Phone updated");
+      toast.success(t("account_phoneUpdated"));
       nav({ to: "/account" });
     } finally {
       setBusy(false);
@@ -74,7 +73,7 @@ function ChangePhone() {
 
   return (
     <MobileScreen>
-      <TopBar title={isAr ? "تغيير رقم الهاتف" : "Change phone"} showBack />
+      <TopBar title={t("account_changePhone")} showBack />
       <ScreenBody>
         <div className="mx-auto mt-4 grid h-14 w-14 place-items-center rounded-2xl bg-primary/15 text-primary">
           <Phone className="h-6 w-6" />
@@ -83,7 +82,7 @@ function ChangePhone() {
         {step === "input" ? (
           <>
             <label className="mt-6 mb-1.5 block text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              {isAr ? "الرقم الجديد" : "New phone number"}
+              {t("account_newPhone")}
             </label>
             <input
               type="tel"
@@ -105,7 +104,7 @@ function ChangePhone() {
         ) : (
           <>
             <p className="mt-4 text-center text-sm text-muted-foreground">
-              {isAr ? "أدخل الرمز المرسل إلى" : "Enter the code sent to"}{" "}
+              {t("account_enterCodeSentTo")}{" "}
               <span dir="ltr" className="font-mono font-semibold text-foreground">
                 {challenge?.destinationMasked ?? phone}
               </span>
@@ -127,7 +126,7 @@ function ChangePhone() {
               disabled={busy || code.length !== 6}
               className="mt-6 h-14 w-full rounded-full gradient-brand text-sm font-bold text-brand-foreground disabled:opacity-50"
             >
-              {busy ? "..." : isAr ? "تأكيد" : "Verify"}
+              {busy ? "..." : t("verify")}
             </button>
           </>
         )}

@@ -34,6 +34,8 @@ export type Database = {
           name_ar: string;
           slug: string;
           sort_order: number;
+          image_path: string | null;
+          is_hidden: boolean;
           created_at: string;
         };
         Insert: Database["public"]["Tables"]["categories"]["Row"];
@@ -47,6 +49,9 @@ export type Database = {
           name_ar: string;
           slug: string;
           color: string;
+          image_path: string | null;
+          is_hidden: boolean;
+          primary_category_id: string | null;
           created_at: string;
         };
         Insert: Database["public"]["Tables"]["brands"]["Row"];
@@ -74,7 +79,17 @@ export type Database = {
           compare_at: number | null;
           display_currency: string;
           region_code: string;
+          region_id: string;
           payload: Json;
+          is_visible: boolean;
+          is_featured: boolean;
+          is_archived: boolean;
+          sort_order: number;
+          image_path: string | null;
+          seo_title_en: string | null;
+          seo_title_ar: string | null;
+          seo_description_en: string | null;
+          seo_description_ar: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -89,6 +104,10 @@ export type Database = {
           face_value: number;
           price: number;
           in_stock: boolean;
+          sort_order: number;
+          is_active: boolean;
+          label_en: string | null;
+          label_ar: string | null;
         };
         Insert: Database["public"]["Tables"]["denominations"]["Row"];
         Update: Partial<Database["public"]["Tables"]["denominations"]["Row"]>;
@@ -104,9 +123,25 @@ export type Database = {
           in_stock: boolean;
           bonus_en: string | null;
           bonus_ar: string | null;
+          sort_order: number;
+          is_active: boolean;
         };
         Insert: Database["public"]["Tables"]["topup_packages"]["Row"];
         Update: Partial<Database["public"]["Tables"]["topup_packages"]["Row"]>;
+        Relationships: [];
+      };
+      regions: {
+        Row: {
+          code: string;
+          name_en: string;
+          name_ar: string;
+          currency_code: string;
+          sort_order: number;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: Database["public"]["Tables"]["regions"]["Row"];
+        Update: Partial<Database["public"]["Tables"]["regions"]["Row"]>;
         Relationships: [];
       };
       product_required_fields: {
@@ -180,12 +215,7 @@ export type Database = {
           user_id: string;
           quote_id: string | null;
           payment_status:
-            | "pending_payment"
-            | "payment_processing"
-            | "paid"
-            | "failed"
-            | "cancelled"
-            | "refunded";
+            "pending_payment" | "payment_processing" | "paid" | "failed" | "cancelled" | "refunded";
           fulfillment_status:
             | "not_started"
             | "fulfillment_pending"
@@ -332,7 +362,10 @@ export type Database = {
           revoked_at: string | null;
           created_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["device_sessions"]["Row"], "id" | "created_at"> & {
+        Insert: Omit<
+          Database["public"]["Tables"]["device_sessions"]["Row"],
+          "id" | "created_at"
+        > & {
           id?: string;
           created_at?: string;
         };
@@ -547,12 +580,7 @@ export type Database = {
     Enums: {
       product_kind: "gift_card" | "direct_topup";
       payment_status:
-        | "pending_payment"
-        | "payment_processing"
-        | "paid"
-        | "failed"
-        | "cancelled"
-        | "refunded";
+        "pending_payment" | "payment_processing" | "paid" | "failed" | "cancelled" | "refunded";
       fulfillment_status:
         | "not_started"
         | "fulfillment_pending"

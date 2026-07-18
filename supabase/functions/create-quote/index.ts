@@ -29,7 +29,13 @@ Deno.serve(async (req) => {
     const clientUnitPrice =
       item.clientUnitPrice != null ? Number(item.clientUnitPrice) : null;
 
-    const { data: product } = await admin.from("products").select("*").eq("id", productId).maybeSingle();
+    const { data: product } = await admin
+      .from("products")
+      .select("*")
+      .eq("id", productId)
+      .eq("is_visible", true)
+      .eq("is_archived", false)
+      .maybeSingle();
     if (!product || !product.in_stock || simulate === "product_unavailable") {
       availability = "product_unavailable";
       warnings.push({
@@ -39,6 +45,12 @@ Deno.serve(async (req) => {
       });
       continue;
     }
+    const regionCode = String(product.region_id ?? product.region_code ?? "GLOBAL");
+    const { data: region } = await admin
+      .from("regions")
+      .select("code,name_en,name_ar")
+      .eq("code", regionCode)
+      .maybeSingle();
 
     let unitPrice = Number(product.from_price);
     let available = true;
@@ -47,12 +59,14 @@ Deno.serve(async (req) => {
       .select("*")
       .eq("id", sku)
       .eq("product_id", productId)
+      .eq("is_active", true)
       .maybeSingle();
     const { data: pkg } = await admin
       .from("topup_packages")
       .select("*")
       .eq("id", sku)
       .eq("product_id", productId)
+      .eq("is_active", true)
       .maybeSingle();
     if (product.kind === "gift_card") {
       if (!den) {
@@ -132,9 +146,9 @@ Deno.serve(async (req) => {
       client_unit_price: clientUnitPrice,
       total_price: totalPrice,
       currency: paymentCurrency,
-      region_code: product.region_code,
-      region_label_en: product.region_code,
-      region_label_ar: product.region_code,
+      region_code: regionCode,
+      region_label_en: region?.name_en ?? regionCode,
+      region_label_ar: region?.name_ar ?? regionCode,
       available,
       fulfillment_fields: item.fulfillmentFields ?? {},
     });

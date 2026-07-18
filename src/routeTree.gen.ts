@@ -77,6 +77,7 @@ import { Route as OrderIdRefundRouteImport } from './routes/order.$id.refund'
 import { Route as OrderIdPartialRouteImport } from './routes/order.$id.partial'
 import { Route as OrderIdFulfillmentRouteImport } from './routes/order.$id.fulfillment'
 import { Route as OrderIdFailedRouteImport } from './routes/order.$id.failed'
+import { Route as BrandsSlugRegionRouteImport } from './routes/brands.$slug.$region'
 
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
@@ -421,6 +422,11 @@ const OrderIdFailedRoute = OrderIdFailedRouteImport.update({
   path: '/failed',
   getParentRoute: () => OrderIdRoute,
 } as any)
+const BrandsSlugRegionRoute = BrandsSlugRegionRouteImport.update({
+  id: '/$region',
+  path: '/$region',
+  getParentRoute: () => BrandsSlugRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -456,7 +462,7 @@ export interface FileRoutesByFullPath {
   '/auth/otp': typeof AuthOtpRoute
   '/auth/reset': typeof AuthResetRoute
   '/auth/signup': typeof AuthSignupRoute
-  '/brands/$slug': typeof BrandsSlugRoute
+  '/brands/$slug': typeof BrandsSlugRouteWithChildren
   '/categories/$slug': typeof CategoriesSlugRoute
   '/dev/operational-states': typeof DevOperationalStatesRoute
   '/dev/order-scenarios': typeof DevOrderScenariosRoute
@@ -485,6 +491,7 @@ export interface FileRoutesByFullPath {
   '/status/supplier-outage': typeof StatusSupplierOutageRoute
   '/status/update-required': typeof StatusUpdateRequiredRoute
   '/support/new': typeof SupportNewRoute
+  '/brands/$slug/$region': typeof BrandsSlugRegionRoute
   '/order/$id/failed': typeof OrderIdFailedRoute
   '/order/$id/fulfillment': typeof OrderIdFulfillmentRoute
   '/order/$id/partial': typeof OrderIdPartialRoute
@@ -526,7 +533,7 @@ export interface FileRoutesByTo {
   '/auth/otp': typeof AuthOtpRoute
   '/auth/reset': typeof AuthResetRoute
   '/auth/signup': typeof AuthSignupRoute
-  '/brands/$slug': typeof BrandsSlugRoute
+  '/brands/$slug': typeof BrandsSlugRouteWithChildren
   '/categories/$slug': typeof CategoriesSlugRoute
   '/dev/operational-states': typeof DevOperationalStatesRoute
   '/dev/order-scenarios': typeof DevOrderScenariosRoute
@@ -555,6 +562,7 @@ export interface FileRoutesByTo {
   '/status/supplier-outage': typeof StatusSupplierOutageRoute
   '/status/update-required': typeof StatusUpdateRequiredRoute
   '/support/new': typeof SupportNewRoute
+  '/brands/$slug/$region': typeof BrandsSlugRegionRoute
   '/order/$id/failed': typeof OrderIdFailedRoute
   '/order/$id/fulfillment': typeof OrderIdFulfillmentRoute
   '/order/$id/partial': typeof OrderIdPartialRoute
@@ -597,7 +605,7 @@ export interface FileRoutesById {
   '/auth/otp': typeof AuthOtpRoute
   '/auth/reset': typeof AuthResetRoute
   '/auth/signup': typeof AuthSignupRoute
-  '/brands/$slug': typeof BrandsSlugRoute
+  '/brands/$slug': typeof BrandsSlugRouteWithChildren
   '/categories/$slug': typeof CategoriesSlugRoute
   '/dev/operational-states': typeof DevOperationalStatesRoute
   '/dev/order-scenarios': typeof DevOrderScenariosRoute
@@ -626,6 +634,7 @@ export interface FileRoutesById {
   '/status/supplier-outage': typeof StatusSupplierOutageRoute
   '/status/update-required': typeof StatusUpdateRequiredRoute
   '/support/new': typeof SupportNewRoute
+  '/brands/$slug/$region': typeof BrandsSlugRegionRoute
   '/order/$id/failed': typeof OrderIdFailedRoute
   '/order/$id/fulfillment': typeof OrderIdFulfillmentRoute
   '/order/$id/partial': typeof OrderIdPartialRoute
@@ -698,6 +707,7 @@ export interface FileRouteTypes {
     | '/status/supplier-outage'
     | '/status/update-required'
     | '/support/new'
+    | '/brands/$slug/$region'
     | '/order/$id/failed'
     | '/order/$id/fulfillment'
     | '/order/$id/partial'
@@ -768,6 +778,7 @@ export interface FileRouteTypes {
     | '/status/supplier-outage'
     | '/status/update-required'
     | '/support/new'
+    | '/brands/$slug/$region'
     | '/order/$id/failed'
     | '/order/$id/fulfillment'
     | '/order/$id/partial'
@@ -838,6 +849,7 @@ export interface FileRouteTypes {
     | '/status/supplier-outage'
     | '/status/update-required'
     | '/support/new'
+    | '/brands/$slug/$region'
     | '/order/$id/failed'
     | '/order/$id/fulfillment'
     | '/order/$id/partial'
@@ -863,7 +875,7 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   SupportRoute: typeof SupportRouteWithChildren
   WalletRoute: typeof WalletRoute
-  BrandsSlugRoute: typeof BrandsSlugRoute
+  BrandsSlugRoute: typeof BrandsSlugRouteWithChildren
   DevOperationalStatesRoute: typeof DevOperationalStatesRoute
   DevOrderScenariosRoute: typeof DevOrderScenariosRoute
   OrderIdRoute: typeof OrderIdRouteWithChildren
@@ -1366,6 +1378,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrderIdFailedRouteImport
       parentRoute: typeof OrderIdRoute
     }
+    '/brands/$slug/$region': {
+      id: '/brands/$slug/$region'
+      path: '/$region'
+      fullPath: '/brands/$slug/$region'
+      preLoaderRoute: typeof BrandsSlugRegionRouteImport
+      parentRoute: typeof BrandsSlugRoute
+    }
   }
 }
 
@@ -1459,6 +1478,18 @@ const SupportRouteChildren: SupportRouteChildren = {
 const SupportRouteWithChildren =
   SupportRoute._addFileChildren(SupportRouteChildren)
 
+interface BrandsSlugRouteChildren {
+  BrandsSlugRegionRoute: typeof BrandsSlugRegionRoute
+}
+
+const BrandsSlugRouteChildren: BrandsSlugRouteChildren = {
+  BrandsSlugRegionRoute: BrandsSlugRegionRoute,
+}
+
+const BrandsSlugRouteWithChildren = BrandsSlugRoute._addFileChildren(
+  BrandsSlugRouteChildren,
+)
+
 interface OrderIdRouteChildren {
   OrderIdFailedRoute: typeof OrderIdFailedRoute
   OrderIdFulfillmentRoute: typeof OrderIdFulfillmentRoute
@@ -1507,7 +1538,7 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   SupportRoute: SupportRouteWithChildren,
   WalletRoute: WalletRoute,
-  BrandsSlugRoute: BrandsSlugRoute,
+  BrandsSlugRoute: BrandsSlugRouteWithChildren,
   DevOperationalStatesRoute: DevOperationalStatesRoute,
   DevOrderScenariosRoute: DevOrderScenariosRoute,
   OrderIdRoute: OrderIdRouteWithChildren,

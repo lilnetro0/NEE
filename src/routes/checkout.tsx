@@ -113,7 +113,7 @@ function Checkout() {
     },
     {
       id: "credit",
-      label: isAr ? "رصيد متجر NETRO" : "NETRO Store Credit",
+      label: t("storeCredit"),
       icon: Wallet,
       enabled: capabilities.storeCreditEnabled && capabilities.purchasingEnabled,
     },
@@ -215,9 +215,7 @@ function Checkout() {
       <MobileScreen>
         <TopBar title={t("reviewOrder")} showBack showCart={false} />
         <ScreenBody className="mt-16 text-center">
-          <p className="text-sm text-muted-foreground">
-            {isAr ? "سلتك فارغة" : "Your cart is empty"}
-          </p>
+          <p className="text-sm text-muted-foreground">{t("cartEmpty")}</p>
           <Link
             to="/home"
             className="mt-6 inline-block rounded-full gradient-brand px-6 py-3 text-sm font-bold text-brand-foreground"
@@ -255,7 +253,7 @@ function Checkout() {
     setState(
       result.data.availabilityStatus === "available" ? "awaiting_payment" : "validating_order",
     );
-    toast.success(isAr ? "تم تحديث العرض" : "Quote refreshed");
+    toast.success(t("checkout_quoteRefreshed"));
   };
 
   /** Accept catalog prices after a price-change warning by re-quoting without client drift. */
@@ -297,24 +295,16 @@ function Checkout() {
     // Payment provider is not wired. Never fake authorization, never create
     // an order that appears paid, never navigate to fulfillment as success.
     if (!isEnabled("purchasingEnabled") || !isEnabled("externalPaymentsEnabled")) {
-      toast.error(
-        isAr
-          ? "الشراء غير متاح حتى اكتمال دمج بوابة الدفع"
-          : "Purchasing is unavailable until payment integration is complete",
-      );
+      toast.error(t("checkout_purchasingLocked"));
       return;
     }
     if (!quotePayable || !quote || enabledMethods.length === 0) {
       if (expired) {
-        toast.error(isAr ? "انتهت صلاحية العرض — حدّث أولاً" : "Quote expired — refresh first");
+        toast.error(t("checkout_quoteExpiredRefreshFirst"));
       }
       return;
     }
-    toast.error(
-      isAr
-        ? "بوابة الدفع غير مفعّلة بعد"
-        : "Payment provider is not configured yet",
-    );
+    toast.error(t("checkout_paymentNotConfigured"));
     logger.warn("Checkout submit blocked: payment provider not integrated", {
       quoteId: quote.id,
     });
@@ -331,18 +321,18 @@ function Checkout() {
           <Globe2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <div>
             <p>
-              {isAr ? "الدفع بعملة " : "Charged in "}
+              {t("checkout_chargedIn")}{" "}
               <span className="font-semibold text-foreground" dir="ltr">
                 {quote?.paymentCurrency ?? items[0]?.displayCurrency ?? "SAR"}
               </span>
               {" · "}
-              {isAr ? "الأسعار المعروضة بعملة " : "Prices shown in "}
+              {t("checkout_pricesShownIn")}{" "}
               <span className="font-semibold text-foreground" dir="ltr">
                 {quote?.displayCurrency ?? items[0]?.displayCurrency ?? "SAR"}
               </span>
             </p>
             <p className="mt-1">
-              {isAr ? "السوق / المنطقة: " : "Market / region: "}
+              {t("checkout_marketRegion")}{" "}
               <span className="font-semibold text-foreground" dir="ltr">
                 {quote?.country ?? DEFAULT_MARKET_COUNTRY}
                 {quote?.regionCode ? ` · ${quote.regionCode}` : ""}
@@ -354,7 +344,7 @@ function Checkout() {
         {quoteUi === "loading" && (
           <div className="mb-4 flex items-center justify-center gap-2 rounded-2xl bg-surface py-8 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            {isAr ? "جاري إنشاء عرض السعر..." : "Creating quote..."}
+            {t("checkout_creatingQuote")}
           </div>
         )}
 
@@ -362,9 +352,9 @@ function Checkout() {
           <QuoteAlert
             tone="danger"
             icon={<AlertTriangle className="h-5 w-5" />}
-            title={isAr ? "تعذّر إنشاء العرض" : "Could not create quote"}
-            message={quoteError ?? (isAr ? "حاول مرة أخرى" : "Please try again")}
-            actionLabel={isAr ? "إعادة المحاولة" : "Retry"}
+            title={t("checkout_quoteErrorTitle")}
+            message={quoteError ?? t("tryAgain")}
+            actionLabel={t("retry")}
             onAction={() => void requestQuote(appliedPromo)}
           />
         )}
@@ -373,11 +363,9 @@ function Checkout() {
           <QuoteAlert
             tone="warning"
             icon={<Clock className="h-5 w-5" />}
-            title={isAr ? "انتهت صلاحية العرض" : "Quote expired"}
-            message={
-              isAr ? "يجب طلب عرض سعر جديد قبل الدفع." : "Request a fresh quote before payment."
-            }
-            actionLabel={isAr ? "تحديث العرض" : "Refresh quote"}
+            title={t("checkout_quoteExpiredTitle")}
+            message={t("checkout_quoteExpiredBody")}
+            actionLabel={t("checkout_refreshQuote")}
             onAction={() => void refreshQuote()}
           />
         )}
@@ -386,15 +374,11 @@ function Checkout() {
           <QuoteAlert
             tone="warning"
             icon={<TrendingUp className="h-5 w-5" />}
-            title={isAr ? "تغيّر السعر" : "Price changed"}
-            message={
-              isAr
-                ? "تغيّرت أسعار بعض العناصر. راجع الإجمالي الجديد ثم أكّد."
-                : "Some item prices changed. Review the new total, then accept."
-            }
-            actionLabel={isAr ? "قبول الأسعار الجديدة" : "Accept new prices"}
+            title={t("op_priceChanged_title")}
+            message={t("checkout_pricesChangedBody")}
+            actionLabel={t("checkout_acceptNewPrices")}
             onAction={() => void acceptNewPrices()}
-            secondaryLabel={isAr ? "تحديث" : "Refresh"}
+            secondaryLabel={t("refresh")}
             onSecondary={() => void refreshQuote()}
           />
         )}
@@ -403,15 +387,11 @@ function Checkout() {
           <QuoteAlert
             tone="danger"
             icon={<PackageX className="h-5 w-5" />}
-            title={isAr ? "منتج غير متاح" : "Product unavailable"}
-            message={
-              isAr
-                ? "عنصر واحد أو أكثر غير متوفر. راجع السلة أو حدّث العرض."
-                : "One or more items are unavailable. Review your cart or refresh."
-            }
-            actionLabel={isAr ? "إعادة المحاولة" : "Retry"}
+            title={t("op_productUnavailable_title")}
+            message={t("checkout_itemsUnavailableBody")}
+            actionLabel={t("retry")}
             onAction={() => void refreshQuote()}
-            secondaryLabel={isAr ? "العودة للسلة" : "Back to cart"}
+            secondaryLabel={t("checkout_backToCart")}
             secondaryTo="/cart"
           />
         )}
@@ -514,16 +494,14 @@ function Checkout() {
         </Section>
 
         {quote && quoteUi !== "loading" && (
-          <Section title={isAr ? "عرض السعر" : "Quote"}>
+          <Section title={t("checkout_quote")}>
             <div className="rounded-2xl bg-surface p-4 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">{isAr ? "معرّف العرض" : "Quote ID"}</span>
+                <span className="text-muted-foreground">{t("checkout_quoteId")}</span>
                 <Bidi className="font-mono text-xs">{quote.id}</Bidi>
               </div>
               <div className="mt-2 flex items-center justify-between">
-                <span className="text-muted-foreground">
-                  {isAr ? "حالة التوفر" : "Availability"}
-                </span>
+                <span className="text-muted-foreground">{t("availability")}</span>
                 <span className="font-semibold" dir="ltr">
                   {quote.availabilityStatus}
                 </span>
@@ -531,7 +509,7 @@ function Checkout() {
               <div className="mt-2 flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" />
-                  {isAr ? "ينتهي خلال" : "Expires in"}
+                  {t("checkout_expiresIn")}
                 </span>
                 <div className="flex items-center gap-2">
                   <span
@@ -550,7 +528,7 @@ function Checkout() {
                     type="button"
                     onClick={() => void refreshQuote()}
                     className="grid h-7 w-7 place-items-center rounded-full bg-background"
-                    aria-label={isAr ? "تحديث" : "Refresh"}
+                    aria-label={t("refresh")}
                   >
                     <RefreshCw className="h-3.5 w-3.5" />
                   </button>
@@ -567,7 +545,7 @@ function Checkout() {
                       <div className="text-[11px] text-muted-foreground" dir="ltr">
                         {line.sku} · ×{line.quantity} ·{" "}
                         {isAr ? line.regionLabel.ar : line.regionLabel.en}
-                        {!line.available ? (isAr ? " · غير متاح" : " · unavailable") : ""}
+                        {!line.available ? ` · ${t("capabilityUnavailable")}` : ""}
                       </div>
                     </div>
                     <span className="shrink-0 font-semibold">
@@ -600,7 +578,7 @@ function Checkout() {
               <>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">
-                    {quote.items.length} {isAr ? "عناصر" : "items"}
+                    {quote.items.length} {t("items")}
                   </span>
                   <span>{formatPrice(quote.subtotal, quote.displayCurrency)}</span>
                 </div>
@@ -619,7 +597,7 @@ function Checkout() {
                 </div>
                 {quote.fees > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">{isAr ? "رسوم" : "Fees"}</span>
+                    <span className="text-muted-foreground">{t("fees")}</span>
                     <span>{formatPrice(quote.fees, quote.displayCurrency)}</span>
                   </div>
                 )}
@@ -630,24 +608,18 @@ function Checkout() {
                   </span>
                 </div>
                 <p className="pt-1 text-[11px] text-muted-foreground">
-                  {isAr
-                    ? "الإجمالي من عرض السعر المؤقت فقط — وليس من السلة."
-                    : "Total comes from the temporary quote only — not the cart."}
+                  {t("checkout_quoteTotalNote")}
                 </p>
               </>
             ) : (
-              <p className="text-muted-foreground">
-                {isAr ? "بانتظار عرض السعر..." : "Waiting for quote..."}
-              </p>
+              <p className="text-muted-foreground">{t("checkout_waitingQuote")}</p>
             )}
           </div>
         </Section>
 
         <div className="mt-4 flex items-center gap-2 rounded-2xl border border-brand/20 bg-brand/5 p-3 text-xs text-muted-foreground">
           <Landmark className="h-4 w-4 text-brand" />
-          {isAr
-            ? "تجريبي: لا يتم إنشاء دفع حقيقي. الدفع محمي عبر 3D-Secure عند الربط."
-            : "Demo: no real payment is created. 3D-Secure applies when connected."}
+          {t("checkout_demoNote")}
         </div>
       </ScreenBody>
 
@@ -670,23 +642,17 @@ function Checkout() {
           }
           className="h-14 w-full rounded-full gradient-brand text-sm font-bold text-brand-foreground shadow-elevated disabled:opacity-50"
         >
-          {quoteUi === "loading" && (isAr ? "جاري التحقق..." : "Validating...")}
-          {state === "payment_processing" && (isAr ? "جاري الدفع..." : "Processing payment...")}
-          {state === "payment_confirmed" && (isAr ? "تم تأكيد الدفع..." : "Payment confirmed...")}
-          {expired && quoteUi !== "loading" && (isAr ? "تحديث العرض" : "Refresh quote")}
+          {quoteUi === "loading" && t("checkout_validating")}
+          {state === "payment_processing" && t("checkout_processingPayment")}
+          {state === "payment_confirmed" && <>{t("paymentConfirmed")}...</>}
+          {expired && quoteUi !== "loading" && t("checkout_refreshQuote")}
           {quotePayable &&
             state === "awaiting_payment" &&
             `${t("confirmOrder")} · ${formatPrice(quote!.total, quote!.currency)}`}
-          {quoteUi === "price_changed" &&
-            !busy &&
-            (isAr ? "اقبل الأسعار للمتابعة" : "Accept prices to continue")}
-          {quoteUi === "product_unavailable" &&
-            !busy &&
-            (isAr ? "منتج غير متاح" : "Product unavailable")}
-          {quoteUi === "error" && !busy && (isAr ? "إعادة المحاولة" : "Retry")}
-          {quoteUi === "idle" &&
-            state === "validating_order" &&
-            (isAr ? "تحضير..." : "Preparing...")}
+          {quoteUi === "price_changed" && !busy && t("checkout_acceptToContinue")}
+          {quoteUi === "product_unavailable" && !busy && t("op_productUnavailable_title")}
+          {quoteUi === "error" && !busy && t("retry")}
+          {quoteUi === "idle" && state === "validating_order" && t("checkout_preparing")}
         </button>
       </div>
     </MobileScreen>

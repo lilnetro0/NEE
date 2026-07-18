@@ -2,11 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Search as SearchIcon, X, TrendingUp, Clock } from "lucide-react";
 import { MobileScreen, ScreenBody, TopBar, BottomNav } from "@/components/shell/Shell";
-import { ProductCard } from "@/components/shell/Cards";
+import { BrandCard } from "@/components/shell/Cards";
 import { useI18n } from "@/i18n/I18nProvider";
-import { useProducts } from "@/data-access";
+import { useBrands, useCategories, useRegions } from "@/data-access";
 import { usePlatform } from "@/platform/PlatformProvider";
 import { AsyncState } from "@/components/common/AsyncState";
+import { ProductGridSkeleton } from "@/components/common/Skeletons";
 
 export const Route = createFileRoute("/search")({
   component: Search,
@@ -15,16 +16,28 @@ export const Route = createFileRoute("/search")({
 const TRENDING = ["PUBG UC", "PSN 100", "Steam Wallet", "Netflix", "Free Fire", "Roblox"];
 
 function Search() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
   const [recent, setRecent] = useState<string[]>([]);
-  const popularQuery = useProducts({ limit: 6, summary: true });
-  const searchQuery = useProducts(
-    debouncedQ.trim()
-      ? { q: debouncedQ.trim(), limit: 48, summary: true }
-      : { limit: 0, summary: true },
-  );
+  const [categoryId, setCategoryId] = useState("");
+  const [regionId, setRegionId] = useState("");
+  const [platform, setPlatform] = useState("");
+  const [featured, setFeatured] = useState(false);
+  const [popularOnly, setPopularOnly] = useState(false);
+  const popularQuery = useBrands({ limit: 6 });
+  const categoriesQuery = useCategories();
+  const regionsQuery = useRegions();
+  const hasFilters = Boolean(categoryId || regionId || platform || featured || popularOnly);
+  const searchQuery = useBrands({
+    q: debouncedQ.trim() || undefined,
+    categoryId: categoryId || undefined,
+    regionId: regionId || undefined,
+    platform: platform || undefined,
+    featured: featured || undefined,
+    popular: popularOnly || undefined,
+    limit: debouncedQ.trim() || hasFilters ? 48 : 0,
+  });
   const { preferences } = usePlatform();
 
   useEffect(() => {
@@ -60,7 +73,7 @@ function Search() {
 
   const popular = popularQuery.data ?? [];
   const searchResults = debouncedQ.trim() ? (searchQuery.data ?? []) : [];
-  const searching = Boolean(debouncedQ.trim());
+  const searching = Boolean(debouncedQ.trim() || hasFilters);
   const searchStatus = !searching
     ? popularQuery.status
     : q !== debouncedQ
@@ -93,12 +106,82 @@ function Search() {
         showNotif={false}
       />
       <ScreenBody>
-        {!q ? (
+        <div className="mb-4 grid grid-cols-2 gap-2">
+          <select
+            className="h-11 rounded-2xl border border-input bg-surface px-3 text-xs"
+            value={categoryId}
+            onChange={(event) => setCategoryId(event.target.value)}
+            aria-label={t("browseCategories")}
+          >
+            <option value="">
+              {t("all")} · {t("browseCategories")}
+            </option>
+            {(categoriesQuery.data ?? []).map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name[locale]}
+              </option>
+            ))}
+          </select>
+          <select
+            className="h-11 rounded-2xl border border-input bg-surface px-3 text-xs"
+            value={regionId}
+            onChange={(event) => setRegionId(event.target.value)}
+            aria-label={t("region")}
+          >
+            <option value="">
+              {t("all")} · {t("region")}
+            </option>
+            {(regionsQuery.data ?? []).map((region) => (
+              <option key={region.code} value={region.code}>
+                {region.name[locale]}
+              </option>
+            ))}
+          </select>
+          <select
+            className="h-11 rounded-2xl border border-input bg-surface px-3 text-xs"
+            value={platform}
+            onChange={(event) => setPlatform(event.target.value)}
+            aria-label={t("platform")}
+          >
+            <option value="">
+              {t("all")} · {t("platform")}
+            </option>
+            <option value="Mobile">{t("platformMobile")}</option>
+            <option value="PlayStation">PlayStation</option>
+            <option value="Xbox">Xbox</option>
+            <option value="PC">{t("platformPc")}</option>
+          </select>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setFeatured((value) => !value)}
+              className={`min-h-11 flex-1 rounded-2xl px-2 text-xs font-semibold ${
+                featured ? "bg-brand text-brand-foreground" : "bg-surface"
+              }`}
+              aria-pressed={featured}
+            >
+              {t("filterFeatured")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPopularOnly((value) => !value)}
+              className={`min-h-11 flex-1 rounded-2xl px-2 text-xs font-semibold ${
+                popularOnly ? "bg-brand text-brand-foreground" : "bg-surface"
+              }`}
+              aria-pressed={popularOnly}
+            >
+              {t("filterPopular")}
+            </button>
+          </div>
+        </div>
+        {!q && !hasFilters ? (
           <>
             {recent.length > 0 && (
               <div className="mb-6">
                 <div className="mb-2 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-muted-foreground">{t("search_recent")}</h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground">
+                    {t("search_recent")}
+                  </h3>
                   <button
                     type="button"
                     onClick={() => {
@@ -145,11 +228,12 @@ function Search() {
               data={popular}
               error={popularQuery.error?.message ?? null}
               onRetry={popularQuery.reload}
+              skeleton={<ProductGridSkeleton count={4} />}
             >
               {(items) => (
                 <div className="grid grid-cols-2 gap-3">
                   {items.slice(0, 6).map((p) => (
-                    <ProductCard key={p.id} product={p} size="md" />
+                    <BrandCard key={p.id} brand={p} />
                   ))}
                 </div>
               )}
@@ -167,6 +251,7 @@ function Search() {
                 <SearchIcon className="h-7 w-7 text-muted-foreground" />
               </div>
             }
+            skeleton={<ProductGridSkeleton count={4} />}
           >
             {(items) => (
               <>
@@ -175,7 +260,7 @@ function Search() {
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   {items.map((p) => (
-                    <ProductCard key={p.id} product={p} size="md" />
+                    <BrandCard key={p.id} brand={p} />
                   ))}
                 </div>
               </>

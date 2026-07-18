@@ -2,12 +2,7 @@ import type { AuthRepository } from "../repositories/auth-repository";
 import type { RequestOptions } from "../options";
 import { cancelledError, ok, type Result } from "../result";
 import { getSupabaseClient } from "@/lib/supabase";
-import {
-  decodeChallengeId,
-  encodeChallengeId,
-  mapSupabaseError,
-  maskDestination,
-} from "./errors";
+import { decodeChallengeId, encodeChallengeId, mapSupabaseError, maskDestination } from "./errors";
 import { mapProfileToUser, mapSessionTokens } from "./mappers";
 import type {
   AuthSessionTokens,
@@ -24,7 +19,11 @@ function aborted(options?: RequestOptions): boolean {
 
 async function loadUser(userId: string): Promise<User | null> {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle();
   if (error || !data) return null;
   return mapProfileToUser(data);
 }
@@ -193,7 +192,8 @@ export function createSupabaseAuthRepository(): AuthRepository {
     async reauth(password, options) {
       if (aborted(options)) return cancelledError();
       const { data: userData, error: userError } = await getSupabaseClient().auth.getUser();
-      if (userError || !userData.user?.email) return mapSupabaseError(userError ?? { message: "UNAUTHORIZED" });
+      if (userError || !userData.user?.email)
+        return mapSupabaseError(userError ?? { message: "UNAUTHORIZED" });
       const { error } = await getSupabaseClient().auth.signInWithPassword({
         email: userData.user.email,
         password,

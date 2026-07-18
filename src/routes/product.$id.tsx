@@ -8,15 +8,19 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { useStore } from "@/store/StoreProvider";
 import { useCapabilities } from "@/platform/useCapabilities";
 import { CapabilityDisabledPanel } from "@/platform/CapabilityDisabled";
+import { ProductDetailSkeleton } from "@/components/common/Skeletons";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/product/$id")({
+  validateSearch: (search: Record<string, unknown>): { sku?: string } =>
+    typeof search.sku === "string" ? { sku: search.sku } : {},
   component: ProductPage,
 });
 
 function ProductPage() {
   const { id } = Route.useParams();
+  const { sku } = Route.useSearch();
   const { data: product, status } = useProduct(id);
   const { data: products = [] } = useProducts();
   const { locale, t, formatPrice } = useI18n();
@@ -26,7 +30,7 @@ function ProductPage() {
     product?.kind === "direct_topup" ? "direct_topup" : product ? "gift_card" : undefined,
   );
 
-  const [tab, setTab] = useState<"desc" | "redeem" | "reviews">("desc");
+  const [tab, setTab] = useState<"desc" | "redeem">("desc");
   const [denominationId, setDenominationId] = useState<string | undefined>();
   const [pkgId, setPkgId] = useState<string | undefined>();
   const [qty, setQty] = useState(1);
@@ -34,19 +38,25 @@ function ProductPage() {
   useEffect(() => {
     if (!product) return;
     if (product.kind === "gift_card") {
-      setDenominationId(product.denominations[0]?.id);
+      setDenominationId(
+        product.denominations.some((denomination) => denomination.id === sku)
+          ? sku
+          : product.denominations[0]?.id,
+      );
       setPkgId(undefined);
     } else {
-      setPkgId(product.packages[0]?.id);
+      setPkgId(product.packages.some((pkg) => pkg.id === sku) ? sku : product.packages[0]?.id);
       setDenominationId(undefined);
     }
-  }, [product]);
+  }, [product, sku]);
 
   if (status === "loading") {
     return (
       <MobileScreen>
         <TopBar title="" showBack />
-        <div className="p-6 text-center text-sm text-muted-foreground">{t("loading")}</div>
+        <div className="px-4">
+          <ProductDetailSkeleton />
+        </div>
       </MobileScreen>
     );
   }
@@ -54,8 +64,16 @@ function ProductPage() {
   if (!product) {
     return (
       <MobileScreen>
-        <TopBar title="Not found" showBack />
-        <div className="p-6 text-center text-sm text-muted-foreground">Product not found.</div>
+        <TopBar title="" showBack />
+        <div className="flex flex-col items-center gap-4 px-6 py-16 text-center">
+          <p className="text-sm text-muted-foreground">{t("productNotFound")}</p>
+          <Link
+            to="/home"
+            className="inline-flex min-h-11 items-center rounded-full gradient-brand px-6 text-sm font-semibold text-brand-foreground active:scale-[0.97]"
+          >
+            {t("returnHome")}
+          </Link>
+        </div>
       </MobileScreen>
     );
   }
@@ -211,7 +229,7 @@ function ProductPage() {
           {product.kind === "direct_topup" && (
             <div className="mt-5">
               <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                Packages
+                {t("packages")}
               </div>
               <div className="space-y-2">
                 {product.packages.map((p) => (
@@ -248,14 +266,18 @@ function ProductPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setQty(Math.max(1, qty - 1))}
-                className="grid h-10 w-10 place-items-center rounded-full bg-surface"
+                className="grid h-11 w-11 place-items-center rounded-full bg-surface active:scale-95"
+                aria-label="-"
               >
                 <Minus className="h-4 w-4" />
               </button>
-              <span className="w-8 text-center font-bold">{qty}</span>
+              <span className="w-8 text-center font-bold" aria-live="polite">
+                {qty}
+              </span>
               <button
                 onClick={() => setQty(qty + 1)}
-                className="grid h-10 w-10 place-items-center rounded-full bg-surface"
+                className="grid h-11 w-11 place-items-center rounded-full bg-surface active:scale-95"
+                aria-label="+"
               >
                 <Plus className="h-4 w-4" />
               </button>
@@ -268,7 +290,6 @@ function ProductPage() {
               [
                 ["desc", t("description")],
                 ["redeem", t("howToRedeem")],
-                ["reviews", t("reviews")],
               ] as const
             ).map(([k, label]) => (
               <button
@@ -303,32 +324,11 @@ function ProductPage() {
                 )}
               </div>
             )}
-            {tab === "reviews" && (
-              <div className="space-y-3">
-                {[
-                  { name: "Khalid", stars: 5, comment: "Fast delivery, worked instantly." },
-                  { name: "Sara", stars: 4, comment: "Great service, will buy again." },
-                  { name: "Faisal", stars: 5, comment: "Perfect, code arrived in seconds." },
-                ].map((r, i) => (
-                  <div key={i} className="rounded-2xl bg-surface p-3">
-                    <div className="mb-1 flex items-center justify-between">
-                      <b className="text-sm text-foreground">{r.name}</b>
-                      <div className="flex">
-                        {Array.from({ length: r.stars }).map((_, j) => (
-                          <Star key={j} className="h-3 w-3 fill-warning text-warning" />
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-xs">{r.comment}</p>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
           <div className="mt-6 flex items-center gap-2 rounded-2xl bg-surface p-3 text-xs text-muted-foreground">
             <Shield className="h-4 w-4 text-brand" />
-            Secure purchase · Refund eligible per policy
+            {t("securePurchaseLine")}
           </div>
 
           {related.length > 0 && (

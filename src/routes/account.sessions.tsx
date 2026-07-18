@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Smartphone, Monitor, LogOut } from "lucide-react";
 import { MobileScreen, TopBar, ScreenBody } from "@/components/shell/Shell";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -12,13 +12,13 @@ export const Route = createFileRoute("/account/sessions")({
 });
 
 function Sessions() {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const isAr = locale === "ar";
   const { listSessions, revokeSession } = useUserActions();
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [sessions, setSessions] = useState<AuthSession[]>([]);
 
-  const load = () => {
+  const load = useCallback(() => {
     const controller = new AbortController();
     setStatus("loading");
     void listSessions(controller.signal).then((result) => {
@@ -31,23 +31,23 @@ function Sessions() {
       setStatus("ready");
     });
     return () => controller.abort();
-  };
+  }, [listSessions]);
 
   useEffect(() => {
     const cancel = load();
     return cancel;
-  }, []);
+  }, [load]);
 
   const revoke = async (id: string) => {
     const result = await revokeSession(id);
     if (!result.ok) return;
     setSessions((s) => s.filter((x) => x.id !== id));
-    toast.success(isAr ? "تم إنهاء الجلسة" : "Session revoked");
+    toast.success(t("account_sessionRevoked"));
   };
 
   return (
     <MobileScreen>
-      <TopBar title={isAr ? "الجلسات النشطة" : "Active sessions"} showBack />
+      <TopBar title={t("auth_activeSessions")} showBack />
       <ScreenBody>
         <AsyncState
           status={status === "ready" ? (sessions.length === 0 ? "empty" : "ready") : status}
@@ -70,7 +70,7 @@ function Sessions() {
                       {s.device}
                       {s.current && (
                         <span className="ms-2 rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary">
-                          {isAr ? "الحالي" : "This device"}
+                          {t("account_thisDevice")}
                         </span>
                       )}
                     </div>
@@ -81,7 +81,7 @@ function Sessions() {
                   {!s.current && (
                     <button
                       onClick={() => revoke(s.id)}
-                      aria-label={isAr ? "إنهاء" : "Revoke"}
+                      aria-label={t("account_revoke")}
                       className="grid h-9 w-9 place-items-center rounded-full bg-destructive/15 text-destructive"
                     >
                       <LogOut className="h-4 w-4" />

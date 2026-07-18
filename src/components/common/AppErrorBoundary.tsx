@@ -66,7 +66,10 @@ export class AppErrorBoundary extends Component<Props, State> {
           <p style={{ margin: "12px 0 0", fontSize: 14, color: "#a8b0c2", lineHeight: 1.45 }}>
             Try again in a moment. If the problem continues, contact support with this reference:
           </p>
-          <p style={{ margin: "12px 0 0", fontFamily: "ui-monospace, monospace", fontSize: 12 }} dir="ltr">
+          <p
+            style={{ margin: "12px 0 0", fontFamily: "ui-monospace, monospace", fontSize: 12 }}
+            dir="ltr"
+          >
             {referenceId}
           </p>
           <button

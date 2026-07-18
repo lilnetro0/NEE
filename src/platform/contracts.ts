@@ -109,7 +109,16 @@ export interface LocalUnlockService {
   unlock(): Promise<LocalUnlockResult>;
 }
 
+/**
+ * Controls the native launch splash. `hide` must be safe to call multiple
+ * times and must be a no-op on platforms without a native splash (web).
+ */
+export interface SplashService {
+  hide(): Promise<void>;
+}
+
 export type PlatformServices = {
+  splash: SplashService;
   secureStorage: SecureStorage;
   preferences: PreferenceStorage;
   clipboard: ClipboardService;

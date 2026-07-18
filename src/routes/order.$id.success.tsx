@@ -29,21 +29,8 @@ function Success() {
     (stage !== "payment" && display === "partially_fulfilled");
   const paymentOnly = !deliveryConfirmed;
 
-  const title = deliveryConfirmed
-    ? isAr
-      ? "تم تأكيد التسليم"
-      : "Delivery confirmed"
-    : isAr
-      ? "تم تأكيد الدفع"
-      : "Payment confirmed";
-
-  const message = deliveryConfirmed
-    ? isAr
-      ? "طلبك جاهز. يمكنك عرض الكود أو تفاصيل التسليم أدناه."
-      : "Your order is ready. You can view your code or delivery details below."
-    : isAr
-      ? "استلمنا الدفع. جاري التنفيذ — هذا ليس اكتمال الطلب."
-      : "We've received your payment. Fulfillment is in progress — this is not order completion.";
+  const title = deliveryConfirmed ? t("deliveryConfirmed") : t("paymentConfirmed");
+  const message = deliveryConfirmed ? t("orderSuccess_readyBody") : t("orderSuccess_paidBody");
 
   const Icon = deliveryConfirmed ? PackageCheck : CreditCard;
 
@@ -68,9 +55,7 @@ function Success() {
         </div>
         {!deliveryConfirmed && (
           <p className="mt-3 max-w-xs text-xs text-muted-foreground">
-            {isAr
-              ? "ستصلك رسالة عند اكتمال التسليم."
-              : "You'll be notified when delivery is confirmed."}
+            {t("orderSuccess_notifyNote")}
           </p>
         )}
         <div className="pb-safe mt-12 flex w-full flex-col gap-3">
@@ -80,7 +65,7 @@ function Success() {
               params={{ id }}
               className="h-14 rounded-full gradient-brand text-sm font-bold leading-[3.5rem] text-brand-foreground shadow-elevated"
             >
-              {isAr ? "متابعة التنفيذ" : "Track fulfillment"}
+              {t("trackFulfillment")}
             </Link>
           )}
           <Link

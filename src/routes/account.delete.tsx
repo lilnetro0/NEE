@@ -38,14 +38,14 @@ function DeleteAccount() {
     try {
       const result = await deleteAccount(password);
       if (!result.ok) {
-        toast.error(isAr ? "فشل الحذف" : "Deletion failed");
+        toast.error(t("account_deleteFailed"));
         return;
       }
       await authUi.logout();
-      toast.success(isAr ? "تم حذف الحساب" : "Account deleted");
+      toast.success(t("account_deleted"));
       nav({ to: "/auth/login" });
     } catch {
-      toast.error(isAr ? "فشل الحذف" : "Deletion failed");
+      toast.error(t("account_deleteFailed"));
     } finally {
       setBusy(false);
     }
@@ -53,22 +53,18 @@ function DeleteAccount() {
 
   return (
     <MobileScreen>
-      <TopBar title={isAr ? "حذف الحساب" : "Delete account"} showBack />
+      <TopBar title={t("auth_deleteAccount")} showBack />
       <ScreenBody>
         <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm">
           <div className="mb-1 flex items-center gap-2 font-bold text-destructive">
             <AlertTriangle className="h-4 w-4" />
-            {isAr ? "هذا الإجراء لا يمكن التراجع عنه" : "This action is permanent"}
+            {t("account_deletePermanent")}
           </div>
-          <p className="text-xs text-muted-foreground">
-            {isAr
-              ? "سيتم حذف حسابك وجميع بياناتك نهائياً. الطلبات النشطة والاستردادات المعلقة ستكتمل قبل الحذف."
-              : "Your account and all data will be permanently deleted. Active orders and pending refunds must complete first."}
-          </p>
+          <p className="text-xs text-muted-foreground">{t("account_deleteBody")}</p>
         </div>
 
         <label className="mt-6 mb-1.5 block text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          {isAr ? "كلمة المرور" : "Password"}
+          {t("password")}
         </label>
         <input
           type="password"
@@ -79,7 +75,7 @@ function DeleteAccount() {
         />
 
         <label className="mt-4 mb-1.5 block text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          {isAr ? "اكتب DELETE للتأكيد" : "Type DELETE to confirm"}
+          {t("account_typeDeleteConfirm")}
         </label>
         <input
           value={confirm}
@@ -94,13 +90,7 @@ function DeleteAccount() {
           disabled={!canSubmit || busy}
           className="mt-8 h-14 w-full rounded-full bg-destructive text-sm font-bold text-destructive-foreground disabled:opacity-40"
         >
-          {busy
-            ? isAr
-              ? "جاري الحذف..."
-              : "Deleting..."
-            : isAr
-              ? "حذف حسابي نهائياً"
-              : "Delete my account"}
+          {busy ? t("account_deleting") : t("account_deleteSubmit")}
         </button>
       </ScreenBody>
     </MobileScreen>

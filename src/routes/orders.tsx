@@ -9,6 +9,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 import { RequireAuth } from "@/auth/RequireAuth";
 import { AsyncState } from "@/components/common/AsyncState";
+import { ListRowsSkeleton } from "@/components/common/Skeletons";
 
 export const Route = createFileRoute("/orders")({
   component: OrdersRoute,
@@ -42,9 +43,7 @@ function OrdersRoute() {
 function Orders() {
   const { t, locale, formatPrice } = useI18n();
   const [f, setF] = useState<OrderListBucket | "all">("all");
-  const { status, data: orders = [], error, reload } = useOrders(
-    f === "all" ? undefined : f,
-  );
+  const { status, data: orders = [], error, reload } = useOrders(f === "all" ? undefined : f);
   const list = orders;
 
   return (
@@ -74,6 +73,15 @@ function Orders() {
           onRetry={reload}
           emptyLabel={t("empty_orders")}
           emptyIcon={<Package className="h-8 w-8" aria-hidden />}
+          emptyAction={
+            <Link
+              to="/home"
+              className="mt-2 inline-flex min-h-11 items-center rounded-full gradient-brand px-6 text-sm font-semibold text-brand-foreground active:scale-[0.97]"
+            >
+              {t("browseNow")}
+            </Link>
+          }
+          skeleton={<ListRowsSkeleton />}
         >
           {(items) => (
             <div className="space-y-3">

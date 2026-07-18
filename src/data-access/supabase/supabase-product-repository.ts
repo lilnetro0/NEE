@@ -3,9 +3,10 @@ import type { RequestOptions } from "../options";
 import { cancelledError, notFoundError, ok, type Result } from "../result";
 import { getSupabaseClient } from "@/lib/supabase";
 import { mapSupabaseError } from "./errors";
-import { mapBrand, mapCategory, mapProduct } from "./mappers";
+import { mapBrand, mapCategory, mapProduct, mapRegion } from "./mappers";
 import type { Brand, Category } from "@/domain/catalog";
 import type { AccountVerification } from "@/domain/product";
+import type { Region } from "@/domain/regions";
 import type { FieldValues } from "@/domain/forms";
 
 const DEFAULT_LIST_LIMIT = 48;
@@ -26,6 +27,15 @@ const BRAND_CACHE_TTL_MS = 60_000;
 let categoryCache: CacheEntry<Category[]> | null = null;
 let brandCache: CacheEntry<Brand[]> | null = null;
 
+async function loadRegionRows(codes: string[]) {
+  if (!codes.length) return [];
+  const { data } = await getSupabaseClient()
+    .from("regions")
+    .select("*")
+    .in("code", [...new Set(codes)]);
+  return data ?? [];
+}
+
 export function createSupabaseProductRepository(): ProductRepository {
   return {
     async list(params?: ProductListParams, options?: RequestOptions) {
@@ -37,33 +47,54 @@ export function createSupabaseProductRepository(): ProductRepository {
       const offset = Math.max(0, Math.floor(params?.offset ?? 0));
       const summary = params?.summary !== false;
 
-      let query = supabase.from("products").select("*");
+      let query = supabase
+        .from("products")
+        .select("*")
+        .eq("is_visible", true)
+        .eq("is_archived", false);
       if (params?.categoryId) query = query.eq("category_id", params.categoryId);
       if (params?.brandId) query = query.eq("brand_id", params.brandId);
+      if (params?.regionId) query = query.eq("region_id", params.regionId);
+      if (params?.platform) query = query.eq("payload->game->>platform", params.platform);
+      if (params?.featured) query = query.eq("is_featured", true);
+      if (params?.popular) query = query.contains("tags", ["bestseller"]);
       if (params?.ids?.length) query = query.in("id", params.ids);
       if (params?.q?.trim()) {
         const q = params.q.trim();
-        query = query.or(
-          `title_en.ilike.%${q}%,title_ar.ilike.%${q}%,brand_id.ilike.%${q}%`,
-        );
+        query = query.or(`title_en.ilike.%${q}%,title_ar.ilike.%${q}%,brand_id.ilike.%${q}%`);
       }
-      const { data: products, error } = await query
-        .order("id")
-        .range(offset, offset + limit - 1);
+      const { data: products, error } = await query.order("id").range(offset, offset + limit - 1);
       if (error) return mapSupabaseError(error);
 
+      const regionRows = await loadRegionRows(
+        (products ?? []).map((product) => product.region_id || product.region_code),
+      );
+      const regionsByCode = new Map(regionRows.map((region) => [region.code, region]));
+
       if (summary || !(products ?? []).length) {
-        return ok((products ?? []).map((p) => mapProduct(p, [], [], [])));
+        return ok(
+          (products ?? []).map((p) =>
+            mapProduct(p, [], [], [], regionsByCode.get(p.region_id || p.region_code)),
+          ),
+        );
       }
 
       const ids = (products ?? []).map((p) => p.id);
       const [{ data: dens }, { data: pkgs }, { data: fields }] = await Promise.all([
-        supabase.from("denominations").select("*").in("product_id", ids),
-        supabase.from("topup_packages").select("*").in("product_id", ids),
+        supabase.from("denominations").select("*").in("product_id", ids).eq("is_active", true),
+        supabase.from("topup_packages").select("*").in("product_id", ids).eq("is_active", true),
         supabase.from("product_required_fields").select("*").in("product_id", ids),
       ]);
       return ok(
-        (products ?? []).map((p) => mapProduct(p, dens ?? [], pkgs ?? [], fields ?? [])),
+        (products ?? []).map((p) =>
+          mapProduct(
+            p,
+            dens ?? [],
+            pkgs ?? [],
+            fields ?? [],
+            regionsByCode.get(p.region_id || p.region_code),
+          ),
+        ),
       );
     },
 
@@ -74,15 +105,18 @@ export function createSupabaseProductRepository(): ProductRepository {
         .from("products")
         .select("*")
         .eq("id", id)
+        .eq("is_visible", true)
+        .eq("is_archived", false)
         .maybeSingle();
       if (error) return mapSupabaseError(error);
       if (!product) return notFoundError("Product", id);
       const [{ data: dens }, { data: pkgs }, { data: fields }] = await Promise.all([
-        supabase.from("denominations").select("*").eq("product_id", id),
-        supabase.from("topup_packages").select("*").eq("product_id", id),
+        supabase.from("denominations").select("*").eq("product_id", id).eq("is_active", true),
+        supabase.from("topup_packages").select("*").eq("product_id", id).eq("is_active", true),
         supabase.from("product_required_fields").select("*").eq("product_id", id),
       ]);
-      return ok(mapProduct(product, dens ?? [], pkgs ?? [], fields ?? []));
+      const regionRows = await loadRegionRows([product.region_id || product.region_code]);
+      return ok(mapProduct(product, dens ?? [], pkgs ?? [], fields ?? [], regionRows[0]));
     },
 
     async listCategories(options) {
@@ -94,6 +128,7 @@ export function createSupabaseProductRepository(): ProductRepository {
       const { data, error } = await getSupabaseClient()
         .from("categories")
         .select("*")
+        .eq("is_hidden", false)
         .order("sort_order")
         .limit(100);
       if (error) return mapSupabaseError(error);
@@ -107,27 +142,61 @@ export function createSupabaseProductRepository(): ProductRepository {
       const { data, error } = await getSupabaseClient()
         .from("categories")
         .select("*")
-        .eq("id", id)
+        .or(`id.eq.${id},slug.eq.${id}`)
+        .eq("is_hidden", false)
         .maybeSingle();
       if (error) return mapSupabaseError(error);
       if (!data) return notFoundError("Category", id);
       return ok(mapCategory(data));
     },
 
-    async listBrands(options) {
+    async listBrands(params, options) {
       if (aborted(options)) return cancelledError();
       const now = Date.now();
-      if (brandCache && now - brandCache.at < BRAND_CACHE_TTL_MS) {
+      const cacheable = !params || Object.values(params).every((value) => value == null);
+      if (cacheable && brandCache && now - brandCache.at < BRAND_CACHE_TTL_MS) {
         return ok(brandCache.value);
       }
-      const { data, error } = await getSupabaseClient()
-        .from("brands")
-        .select("*")
+
+      const supabase = getSupabaseClient();
+      let brandIds: string[] | undefined;
+      if (
+        params?.categoryId ||
+        params?.regionId ||
+        params?.platform ||
+        params?.featured ||
+        params?.popular
+      ) {
+        let productsQuery = supabase
+          .from("products")
+          .select("brand_id")
+          .eq("is_visible", true)
+          .eq("is_archived", false);
+        if (params.categoryId) productsQuery = productsQuery.eq("category_id", params.categoryId);
+        if (params.regionId) productsQuery = productsQuery.eq("region_id", params.regionId);
+        if (params.platform) {
+          productsQuery = productsQuery.eq("payload->game->>platform", params.platform);
+        }
+        if (params.featured) productsQuery = productsQuery.eq("is_featured", true);
+        if (params.popular) productsQuery = productsQuery.contains("tags", ["bestseller"]);
+        const { data: productBrands, error: productBrandsError } = await productsQuery;
+        if (productBrandsError) return mapSupabaseError(productBrandsError);
+        brandIds = [...new Set((productBrands ?? []).map((row) => row.brand_id))];
+        if (!brandIds.length) return ok([]);
+      }
+
+      let query = supabase.from("brands").select("*").eq("is_hidden", false);
+      if (brandIds) query = query.in("id", brandIds);
+      if (params?.q?.trim()) {
+        const q = params.q.trim();
+        query = query.or(`name_en.ilike.%${q}%,name_ar.ilike.%${q}%,slug.ilike.%${q}%`);
+      }
+      const { data, error } = await query
         .order("name_en")
-        .limit(100);
+        .limit(Math.min(params?.limit ?? 100, 100));
       if (error) return mapSupabaseError(error);
       const mapped = (data ?? []).map(mapBrand);
-      brandCache = { at: now, value: mapped };
+      if (cacheable) brandCache = { at: now, value: mapped };
       return ok(mapped);
     },
 
@@ -136,11 +205,47 @@ export function createSupabaseProductRepository(): ProductRepository {
       const { data, error } = await getSupabaseClient()
         .from("brands")
         .select("*")
-        .eq("id", id)
+        .or(`id.eq.${id},slug.eq.${id}`)
+        .eq("is_hidden", false)
         .maybeSingle();
       if (error) return mapSupabaseError(error);
       if (!data) return notFoundError("Brand", id);
       return ok(mapBrand(data));
+    },
+
+    async listRegions(options) {
+      if (aborted(options)) return cancelledError();
+      const { data, error } = await getSupabaseClient()
+        .from("regions")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order");
+      if (error) return mapSupabaseError(error);
+      return ok((data ?? []).map(mapRegion));
+    },
+
+    async listRegionsForBrand(brandId, params, options) {
+      if (aborted(options)) return cancelledError();
+      const supabase = getSupabaseClient();
+      let query = supabase
+        .from("products")
+        .select("region_id")
+        .eq("brand_id", brandId)
+        .eq("is_visible", true)
+        .eq("is_archived", false);
+      if (params?.categoryId) query = query.eq("category_id", params.categoryId);
+      const { data: offerings, error: offeringError } = await query;
+      if (offeringError) return mapSupabaseError(offeringError);
+      const codes = [...new Set((offerings ?? []).map((row) => row.region_id))];
+      if (!codes.length) return ok([]);
+      const { data, error } = await supabase
+        .from("regions")
+        .select("*")
+        .in("code", codes)
+        .eq("is_active", true)
+        .order("sort_order");
+      if (error) return mapSupabaseError(error);
+      return ok((data ?? []).map(mapRegion) as Region[]);
     },
 
     async verifyAccount(productId, values: FieldValues, options) {

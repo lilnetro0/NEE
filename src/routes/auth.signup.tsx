@@ -24,11 +24,7 @@ function Signup() {
 
   const submit = async () => {
     if (!displayName.trim() || !email.includes("@") || password.length < 6) {
-      toast.error(
-        isAr
-          ? "أدخل الاسم والبريد وكلمة مرور من 6 أحرف على الأقل"
-          : "Enter your name, email, and a password (min 6 characters)",
-      );
+      toast.error(t("auth_enterSignupFields"));
       return;
     }
     const ok = await auth.signup({

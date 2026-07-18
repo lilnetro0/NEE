@@ -1,0 +1,63 @@
+---
+description: NETRO project engineering rules
+alwaysApply: true
+---
+
+# NETRO Engineering Rules
+
+NETRO is a mobile-first bilingual PWA intended for later Capacitor packaging.
+
+## Architecture
+
+- Keep UI components separate from business logic and data access.
+- Never import mock data directly into route components.
+- Access data through typed repository interfaces.
+- Do not place supplier or payment API calls in frontend components.
+- Do not expose supplier product IDs or supplier names to customers.
+- Do not use `any`.
+- Prefer discriminated unions for product and status models.
+- Maintain strict TypeScript compatibility.
+
+## Product Types
+
+NETRO supports distinct product types:
+
+- Gift cards
+- Direct game top-ups
+
+Do not model these as one undifferentiated product shape.
+
+## Checkout
+
+- Final prices must come from a quote.
+- Payment confirmation is not fulfillment completion.
+- Payment, fulfillment and refund statuses must remain separate.
+- Direct top-ups should be limited to one per checkout in the initial release.
+
+## Security
+
+- Never store auth tokens, digital codes or sensitive order data in localStorage.
+- Never include gift-card codes, Player IDs, emails, phone numbers or payment details in logs or analytics.
+- Codes and identifiers must render LTR even in Arabic layouts.
+- Sensitive code reveal must be treated as a server-controlled action in future backend integration.
+
+## Localization
+
+- Every user-facing string must be localized.
+- Preserve full English LTR and Arabic RTL support.
+- Do not hard-code text in route components.
+- Official product and brand names should not be translated unless an official Arabic name exists.
+
+## Platform
+
+- Use the platform service abstraction instead of direct browser APIs.
+- Features must respect platform capability flags.
+- Do not introduce desktop-only layouts.
+- Preserve safe areas and mobile touch targets.
+
+## Change Discipline
+
+- Work one implementation phase at a time.
+- Do not redesign unrelated screens.
+- Run typecheck and production build after every phase.
+- Report all changed files and unresolved issues.

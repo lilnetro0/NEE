@@ -15,7 +15,8 @@ export function createSupabaseUserRepository(): UserRepository {
       if (aborted(options)) return cancelledError();
       const supabase = getSupabaseClient();
       const { data: auth, error: authError } = await supabase.auth.getUser();
-      if (authError || !auth.user) return mapSupabaseError(authError ?? { message: "UNAUTHORIZED" });
+      if (authError || !auth.user)
+        return mapSupabaseError(authError ?? { message: "UNAUTHORIZED" });
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
@@ -30,7 +31,8 @@ export function createSupabaseUserRepository(): UserRepository {
       if (aborted(options)) return cancelledError();
       const supabase = getSupabaseClient();
       const { data: auth, error: authError } = await supabase.auth.getUser();
-      if (authError || !auth.user) return mapSupabaseError(authError ?? { message: "UNAUTHORIZED" });
+      if (authError || !auth.user)
+        return mapSupabaseError(authError ?? { message: "UNAUTHORIZED" });
       const { data, error } = await supabase
         .from("store_credits")
         .select("*")

@@ -50,7 +50,7 @@ function dirAttr(direction: InputDirection | undefined): "ltr" | "rtl" | undefin
  * validates on blur; all messages are localized.
  */
 export function DynamicForm({ fields, values, onChange }: Props) {
-  const { locale } = useI18n();
+  const { t, locale } = useI18n();
   const isAr = locale === "ar";
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
@@ -129,7 +129,7 @@ export function DynamicForm({ fields, values, onChange }: Props) {
                   className={cn(INPUT_CLASS, "appearance-none pe-10")}
                 >
                   <option value="" disabled>
-                    {isAr ? "اختر..." : "Choose..."}
+                    {t("form_choose")}
                   </option>
                   {field.options.map((o) => (
                     <option key={o.value} value={o.value}>
@@ -223,6 +223,7 @@ function SearchableSelect({
   onSelect: (value: string) => void;
   isAr: boolean;
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -245,13 +246,7 @@ function SearchableSelect({
         className={cn(INPUT_CLASS, "flex items-center justify-between text-start")}
       >
         <span className={selected ? "" : "text-muted-foreground"}>
-          {selected
-            ? isAr
-              ? selected.label.ar
-              : selected.label.en
-            : isAr
-              ? "ابحث واختر..."
-              : "Search and select..."}
+          {selected ? (isAr ? selected.label.ar : selected.label.en) : t("form_searchSelect")}
         </span>
         <ChevronDown className="h-4 w-4 text-muted-foreground" />
       </button>
@@ -269,9 +264,7 @@ function SearchableSelect({
                   ? isAr
                     ? field.searchPlaceholder.ar
                     : field.searchPlaceholder.en
-                  : isAr
-                    ? "بحث..."
-                    : "Search..."
+                  : t("form_searchPlaceholder")
               }
               className="flex-1 bg-transparent text-sm outline-none"
             />
@@ -279,7 +272,7 @@ function SearchableSelect({
           <div className="max-h-52 overflow-auto">
             {filtered.length === 0 ? (
               <p className="px-4 py-3 text-center text-xs text-muted-foreground">
-                {isAr ? "لا توجد نتائج" : "No results"}
+                {t("form_noResults")}
               </p>
             ) : (
               filtered.map((o) => (

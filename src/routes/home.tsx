@@ -1,17 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search, Sparkles } from "lucide-react";
 import { MobileScreen, ScreenBody, TopBar, BottomNav } from "@/components/shell/Shell";
-import {
-  BrandTile,
-  CategoryTile,
-  HScroll,
-  ProductCard,
-  SectionHeader,
-} from "@/components/shell/Cards";
+import { BrandTile, CategoryTile, HScroll, SectionHeader } from "@/components/shell/Cards";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useBrands, useCategories, useCurrentUser, useProducts } from "@/data-access";
 import { useCapabilities } from "@/platform/useCapabilities";
 import { AsyncState } from "@/components/common/AsyncState";
+import { HomeSkeleton } from "@/components/common/Skeletons";
 import type { Product } from "@/domain/product";
 
 export const Route = createFileRoute("/home")({
@@ -31,23 +26,32 @@ function Home() {
   const brands = brandsQuery.data ?? [];
 
   const catalogStatus =
-    productsQuery.status === "error" || categoriesQuery.status === "error"
+    productsQuery.status === "error" ||
+    categoriesQuery.status === "error" ||
+    brandsQuery.status === "error"
       ? "error"
-      : productsQuery.status === "loading" || categoriesQuery.status === "loading"
+      : productsQuery.status === "loading" ||
+          categoriesQuery.status === "loading" ||
+          brandsQuery.status === "loading"
         ? "loading"
         : productsQuery.status === "empty"
           ? "empty"
           : "ready";
 
-  const featured = products
-    .filter((p) => p.tags?.includes("bestseller") || p.tags?.includes("new"))
-    .slice(0, 8);
-  const offers = products.filter((p) => p.compareAt).slice(0, 8);
+  const brandsFor = (predicate: (product: Product) => boolean) => {
+    const brandIds = new Set(products.filter(predicate).map((product) => product.brandId));
+    return brands.filter((brand) => brandIds.has(brand.id)).slice(0, 8);
+  };
+  const featured = brandsFor(
+    (product) =>
+      product.tags?.includes("bestseller") === true || product.tags?.includes("new") === true,
+  );
+  const offers = brandsFor((product) => Boolean(product.compareAt));
   const topups = isEnabled("directGameTopUpEnabled")
-    ? products.filter((p) => p.kind === "direct_topup").slice(0, 8)
+    ? brandsFor((product) => product.kind === "direct_topup")
     : [];
   const gifts = isEnabled("giftCardPurchaseEnabled")
-    ? products.filter((p) => p.kind === "gift_card").slice(0, 8)
+    ? brandsFor((product) => product.kind === "gift_card")
     : [];
   const firstName = user?.displayName?.split(" ")[0] ?? t("welcome");
   const visibleCategories = categories.filter((c) => {
@@ -77,15 +81,15 @@ function Home() {
           {t("search")}...
         </Link>
 
-        <div className="relative mt-4 overflow-hidden rounded-3xl gradient-hero p-5 text-white shadow-elevated">
+        <div className="relative mt-3 overflow-hidden rounded-3xl gradient-hero p-4 text-white shadow-elevated">
           <div className="relative">
-            <div className="mt-1 font-display text-2xl font-black leading-tight">
+            <div className="font-display text-xl font-black leading-tight">
               {t("home_browseCtaTitle")}
             </div>
             <p className="mt-1 text-sm text-white/80">{t("home_browseCtaBody")}</p>
             <Link
               to="/categories"
-              className="mt-4 inline-flex rounded-full bg-white px-4 py-2 text-xs font-bold text-black"
+              className="mt-3 inline-flex min-h-9 items-center rounded-full bg-white px-4 py-2 text-xs font-bold text-black active:scale-[0.97]"
             >
               {t("home_browseCtaAction")}
             </Link>
@@ -95,13 +99,19 @@ function Home() {
         <AsyncState
           status={catalogStatus}
           data={products as Product[]}
-          error={productsQuery.error?.message ?? categoriesQuery.error?.message ?? null}
+          error={
+            productsQuery.error?.message ??
+            categoriesQuery.error?.message ??
+            brandsQuery.error?.message ??
+            null
+          }
           onRetry={() => {
             productsQuery.reload();
             categoriesQuery.reload();
             brandsQuery.reload();
           }}
           emptyLabel={t("empty_search")}
+          skeleton={<HomeSkeleton />}
         >
           {() => (
             <>
@@ -116,8 +126,8 @@ function Home() {
 
               <SectionHeader title={t("bestSellers")} to="/search" />
               <HScroll>
-                {featured.map((p) => (
-                  <ProductCard key={p.id} product={p} />
+                {featured.map((brand) => (
+                  <BrandTile key={brand.id} brand={brand} />
                 ))}
               </HScroll>
 
@@ -125,8 +135,8 @@ function Home() {
                 <>
                   <SectionHeader title={t("giftCards")} to="/categories/gift-cards" />
                   <HScroll>
-                    {gifts.map((p) => (
-                      <ProductCard key={p.id} product={p} />
+                    {gifts.map((brand) => (
+                      <BrandTile key={brand.id} brand={brand} />
                     ))}
                   </HScroll>
                 </>
@@ -136,8 +146,8 @@ function Home() {
                 <>
                   <SectionHeader title={t("topUps")} to="/categories/top-ups" />
                   <HScroll>
-                    {topups.map((p) => (
-                      <ProductCard key={p.id} product={p} />
+                    {topups.map((brand) => (
+                      <BrandTile key={brand.id} brand={brand} />
                     ))}
                   </HScroll>
                 </>
@@ -146,9 +156,9 @@ function Home() {
               {offers.length > 0 && (
                 <>
                   <SectionHeader title={t("specialOffers")} />
-                  <div className="grid grid-cols-2 gap-3">
-                    {offers.slice(0, 4).map((p) => (
-                      <ProductCard key={p.id} product={p} size="md" />
+                  <div className="grid grid-cols-4 gap-3">
+                    {offers.slice(0, 4).map((brand) => (
+                      <BrandTile key={brand.id} brand={brand} />
                     ))}
                   </div>
                 </>

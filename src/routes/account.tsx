@@ -26,7 +26,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { RequireAuth } from "@/auth/RequireAuth";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useCapabilities } from "@/platform/useCapabilities";
-import { isDevToolsEnabled } from "@/config/env";
+import { getPublicEnv, isDevToolsEnabled } from "@/config/env";
 import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/account")({
@@ -56,7 +56,6 @@ function Account() {
       icon: Wallet,
       label: t("storeCredit"),
       to: "/wallet",
-      sub: "SAR 120.00",
     });
   }
   if (isEnabled("savedPaymentMethodsEnabled")) {
@@ -92,7 +91,7 @@ function Account() {
     ...(moneyItems.length > 0
       ? [
           {
-            title: locale === "ar" ? "المال" : "Money",
+            title: t("money"),
             items: moneyItems,
           },
         ]
@@ -153,9 +152,9 @@ function Account() {
           </div>
           <Link
             to="/account/profile"
-            className="rounded-full bg-white/20 px-3 py-1.5 text-xs font-bold backdrop-blur"
+            className="rounded-full bg-white/20 px-3 py-1.5 text-xs font-bold backdrop-blur active:scale-95"
           >
-            Edit
+            {t("edit")}
           </Link>
         </div>
 
@@ -208,8 +207,8 @@ function Account() {
         >
           {t("auth_deleteAccount")}
         </Link>
-        <p className="mt-6 text-center text-[11px] text-muted-foreground">
-          NETRO v1.0 · Made with ⚡
+        <p className="mt-6 text-center text-[11px] text-muted-foreground" dir="ltr">
+          NETRO v{getPublicEnv().appVersion}
         </p>
       </ScreenBody>
       <BottomNav />

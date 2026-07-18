@@ -9,6 +9,7 @@ export type Region = Readonly<{
   /** Stable redemption-region code sent across application boundaries. */
   code: string;
   name: Localized;
+  currencyCode?: CurrencyCode;
 }>;
 
 export type Country = {

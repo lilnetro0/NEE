@@ -18,6 +18,8 @@ import { ThemeProvider } from "../theme/ThemeProvider";
 import { StoreProvider } from "../store/StoreProvider";
 import { RepositoriesProvider } from "../data-access/RepositoriesProvider";
 import { PlatformProvider } from "../platform/PlatformProvider";
+import { NativeSplashController } from "../platform/NativeSplashController";
+import { NativeBackButtonHandler } from "../platform/NativeBackButtonHandler";
 import { AuthProvider } from "../auth/AuthProvider";
 import { AppErrorBoundary } from "../components/common/AppErrorBoundary";
 import { EnvGate } from "../config/EnvGate";
@@ -168,6 +170,8 @@ function RootComponent() {
                   <StoreProvider>
                     <RepositoriesProvider>
                       <AuthProvider>
+                        <NativeSplashController />
+                        <NativeBackButtonHandler />
                         <Outlet />
                         <Toaster position="top-center" theme="dark" />
                       </AuthProvider>

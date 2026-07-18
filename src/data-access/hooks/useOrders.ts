@@ -12,19 +12,16 @@ export function useOrders(filter?: OrderDisplayStatus | OrderListBucket | "all")
     filter === "refunded" ||
     filter === "cancelled";
 
-  return useResultQuery(
-    (signal) => {
-      if (!filter || filter === "all") return orders.list(undefined, { signal });
-      if (isBucket) return orders.list({ bucket: filter }, { signal });
-      return orders.list({ displayStatus: filter }, { signal });
-    },
-    [orders, filter],
-  );
+  return useResultQuery(["orders", filter ?? "all"], (signal) => {
+    if (!filter || filter === "all") return orders.list(undefined, { signal });
+    if (isBucket) return orders.list({ bucket: filter }, { signal });
+    return orders.list({ displayStatus: filter }, { signal });
+  });
 }
 
 export function useOrder(id: string) {
   const { orders } = useRepositories();
-  return useResultQuery((signal) => orders.getById(id, { signal }), [orders, id]);
+  return useResultQuery(["order", id], (signal) => orders.getById(id, { signal }));
 }
 
 export function useOrderMutations() {
